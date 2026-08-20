@@ -48,14 +48,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .well.bracket::before{top:-2px; left:-2px; border-top-width:2px; border-left-width:2px;}
 .well.bracket::after{bottom:-2px; right:-2px; border-bottom-width:2px; border-right-width:2px;}
 
-/* ---- week strip ---- */
-.week{display:flex; gap:6px; padding:14px 16px 4px;}
-.week .day{flex:1; aspect-ratio:1; border:2px dashed var(--line2); display:flex; align-items:center;
-  justify-content:center; font-family:var(--f-mono); font-size:12px; color:var(--tx3);}
-.week .day.done{background:var(--cy); border:2px solid var(--cy-d); color:var(--ink); border-style:solid;
-  box-shadow:inset -3px -3px 0 rgba(0,0,0,.25);}
-.week .day.today{background:var(--ye); border:2px solid #8a6a10; color:var(--ink); border-style:solid;
-  box-shadow:inset -3px -3px 0 rgba(0,0,0,.25);}
 
 /* ---- routine list ---- */
 .list{padding:12px 16px 100px; display:flex; flex-direction:column; gap:10px;}
@@ -176,9 +168,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .field label{display:block; font-size:11px; color:var(--tx2); margin-bottom:6px;}
 .field input[type=text],.field input[type=time],.field input[type=number]{
   width:100%; background:var(--well); border:2px solid var(--line2); color:var(--tx); padding:10px; font-size:14px; font-family:inherit;}
-.days-pick{display:flex; gap:6px;}
-.days-pick button{flex:1; aspect-ratio:1; background:var(--well); border:2px dashed var(--line2); color:var(--tx3); font-family:var(--f-mono);}
-.days-pick button.on{background:var(--cy); border-style:solid; border-color:var(--cy-d); color:var(--ink); font-weight:700;}
 .steps-edit .step-row{display:flex; gap:8px; align-items:center; padding:8px; background:var(--well); border:1px solid var(--line); margin-bottom:8px;}
 .steps-edit .step-row input[type=text]{flex:2; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:8px; font-family:inherit;}
 .steps-edit .step-row input.emoji{flex:0 0 46px; text-align:center;}
@@ -198,7 +187,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 /* ============ storage ============ */
 const STORE_KEY = "routineforge_data_v1";
-const DAY_LABELS = ["月","火","水","木","金","土","日"];
 
 function loadData(){
   const raw = localStorage.getItem(STORE_KEY);
@@ -206,7 +194,7 @@ function loadData(){
   const data = {
     routines: [
       {
-        id: "r_morning", name: "朝のルーティン", icon: "🌅", time: "06:00", days: [1,2,3,4,5],
+        id: "r_morning", name: "朝のルーティン", icon: "🌅",
         steps: [
           {id:"s1", name:"背伸びをして水を一杯飲む", icon:"🧴", duration:120},
           {id:"s2", name:"ベッドを整える", icon:"🛏️", duration:120},
@@ -214,7 +202,7 @@ function loadData(){
         ]
       },
       {
-        id: "r_night", name: "ナイトルーティン", icon: "🌙", time: "21:00", days: [1,2,3,4,5],
+        id: "r_night", name: "ナイトルーティン", icon: "🌙",
         steps: [
           {id:"s4", name:"机の上を片付ける", icon:"🗂️", duration:180},
           {id:"s5", name:"明日の準備をする", icon:"🎒", duration:180},
@@ -234,23 +222,16 @@ function todayStr(d=new Date()){
   const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
   return `${y}-${m}-${day}`;
 }
-function isoWeekday(d=new Date()){ const w=d.getDay(); return w===0?7:w; } // 1=Mon..7=Sun
 
 function computeStreak(routineId){
-  const logs = DATA.logs.filter(l=>l.routineId===routineId).map(l=>l.date);
-  const set = new Set(logs);
-  const routine = DATA.routines.find(r=>r.id===routineId);
+  const set = new Set(DATA.logs.filter(l=>l.routineId===routineId).map(l=>l.date));
   let streak = 0;
   let cur = new Date();
   for(let i=0;i<400;i++){
-    const wd = isoWeekday(cur);
-    const scheduled = routine.days.includes(wd);
     const ds = todayStr(cur);
-    if(scheduled){
-      if(set.has(ds)){ streak++; }
-      else if(ds===todayStr()){ /* today not done yet, skip without breaking */ }
-      else { break; }
-    }
+    if(set.has(ds)){ streak++; }
+    else if(ds===todayStr()){ /* today not done yet, skip without breaking */ }
+    else { break; }
     cur.setDate(cur.getDate()-1);
   }
   return streak;
@@ -258,7 +239,6 @@ function computeStreak(routineId){
 function totalDays(routineId){ return DATA.logs.filter(l=>l.routineId===routineId).length; }
 
 function computeMaxStreak(routineId){
-  const routine = DATA.routines.find(r=>r.id===routineId);
   const logDates = new Set(DATA.logs.filter(l=>l.routineId===routineId).map(l=>l.date));
   if(logDates.size===0) return 0;
   const sorted = Array.from(logDates).sort();
@@ -266,10 +246,7 @@ function computeMaxStreak(routineId){
   const end = new Date();
   let max=0, cur=0;
   while(d<=end){
-    const wd = isoWeekday(d);
-    if(routine.days.includes(wd)){
-      if(logDates.has(todayStr(d))){ cur++; max=Math.max(max,cur); } else { cur=0; }
-    }
+    if(logDates.has(todayStr(d))){ cur++; max=Math.max(max,cur); } else { cur=0; }
     d.setDate(d.getDate()+1);
   }
   return max;
@@ -404,30 +381,15 @@ function render(){
 
 /* ============ LIST VIEW ============ */
 function renderList(){
-  const weekCells = [];
-  const now = new Date();
-  const monday = new Date(now);
-  monday.setDate(now.getDate() - (isoWeekday(now)-1));
-  for(let i=0;i<7;i++){
-    const d = new Date(monday); d.setDate(monday.getDate()+i);
-    const ds = todayStr(d);
-    const isToday = ds===todayStr();
-    const done = DATA.logs.some(l=>l.date===ds);
-    let cls = "day";
-    if(isToday) cls += " today"; else if(done) cls += " done";
-    weekCells.push(`<div class="${cls}">${DAY_LABELS[i]}</div>`);
-  }
-
   const cards = DATA.routines.map(r=>{
     const streak = computeStreak(r.id);
-    const days = r.days.map(d=>DAY_LABELS[d-1]).join("・");
     const doneToday = DATA.logs.some(l=>l.routineId===r.id && l.date===todayStr());
     return `
     <div class="well rcard">
       <div class="icon">${r.icon}</div>
       <div class="meta" data-edit="${r.id}">
         <div class="name">${escapeHtml(r.name)}</div>
-        <div class="sub">${r.time}　${days}　全${r.steps.length}項目</div>
+        <div class="sub">全${r.steps.length}項目</div>
       </div>
       <div class="streak"><b>${streak}</b>継続日</div>
       <button class="btn-sq play" data-start="${r.id}">${doneToday? "↻" : "▶"}</button>
@@ -442,7 +404,6 @@ function renderList(){
         <button data-tab="stats">統計</button>
       </div>
     </div>
-    <div class="week">${weekCells.join("")}</div>
     <div class="list">
       ${cards || `<div class="empty-hint">右下の＋からルーティンを追加してください</div>`}
     </div>
@@ -728,18 +689,13 @@ function renderEdit(){
   const routineId = VIEW.routineId;
   const existing = routineId ? DATA.routines.find(r=>r.id===routineId) : null;
   editDraft = existing ? JSON.parse(JSON.stringify(existing)) : {
-    id: "r_"+Date.now(), name:"", icon:"⭐", time:"07:00", days:[1,2,3,4,5], steps:[]
+    id: "r_"+Date.now(), name:"", icon:"⭐", steps:[]
   };
   paintEdit();
 }
 
 function paintEdit(){
   const d = editDraft;
-  const daysBtns = DAY_LABELS.map((lbl,i)=>{
-    const wd = i+1;
-    return `<button data-day="${wd}" class="${d.days.includes(wd)?'on':''}">${lbl}</button>`;
-  }).join("");
-
   const stepsHtml = d.steps.map((s,i)=>`
     <div class="step-row" data-idx="${i}">
       <input type="text" class="emoji" value="${escapeHtml(s.icon)}" data-field="icon" data-idx="${i}" />
@@ -759,19 +715,9 @@ function paintEdit(){
         <label>ルーティン名</label>
         <input type="text" id="fName" value="${escapeHtml(d.name)}" placeholder="例: 朝のルーティン" />
       </div>
-      <div style="display:flex; gap:10px;">
-        <div class="field" style="flex:0 0 70px;">
-          <label>アイコン</label>
-          <input type="text" id="fIcon" value="${escapeHtml(d.icon)}" />
-        </div>
-        <div class="field" style="flex:1;">
-          <label>通知時刻</label>
-          <input type="time" id="fTime" value="${d.time}" />
-        </div>
-      </div>
-      <div class="field">
-        <label>実行する曜日</label>
-        <div class="days-pick">${daysBtns}</div>
+      <div class="field" style="max-width:90px;">
+        <label>アイコン</label>
+        <input type="text" id="fIcon" value="${escapeHtml(d.icon)}" />
       </div>
       <div class="field">
         <label>ステップ</label>
@@ -786,15 +732,6 @@ function paintEdit(){
   document.getElementById("eCancel").addEventListener("click", ()=> nav({name:"list"}));
   document.getElementById("fName").addEventListener("input", e=> d.name = e.target.value);
   document.getElementById("fIcon").addEventListener("input", e=> d.icon = e.target.value || "⭐");
-  document.getElementById("fTime").addEventListener("input", e=> d.time = e.target.value);
-  root.querySelectorAll("[data-day]").forEach(btn=>{
-    btn.addEventListener("click", ()=>{
-      const wd = Number(btn.dataset.day);
-      if(d.days.includes(wd)) d.days = d.days.filter(x=>x!==wd);
-      else d.days.push(wd);
-      paintEdit();
-    });
-  });
   root.querySelectorAll("[data-field]").forEach(inp=>{
     inp.addEventListener("input", ()=>{
       const i = Number(inp.dataset.idx); const f = inp.dataset.field;
