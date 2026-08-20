@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
 <title>RoutineForge</title>
-<meta name="theme-color" content="#0F141A" />
+<meta name="theme-color" content="#000000" />
 <link rel="manifest" href="manifest.json" />
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -27,10 +27,12 @@ body{
   background-image:repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 1px, transparent 4px),
                     repeating-linear-gradient(90deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 1px, transparent 4px);
 }
-button{font-family:inherit; color:inherit; cursor:pointer;}
+button{font-family:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight-color:transparent;}
 .mono{font-family:var(--f-mono); font-variant-numeric:tabular-nums;}
 #app{max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;
   padding-bottom:env(safe-area-inset-bottom);}
+
+.pxi{width:18px; height:18px; shape-rendering:crispEdges; fill:currentColor; display:block;}
 
 /* ---- top bar ---- */
 .topbar{background:#000000; border-bottom:2px solid var(--line2); padding:14px 16px;
@@ -41,13 +43,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .tabs button + button{border-left:2px solid var(--line2);}
 .tabs button.active{background:var(--cy-d); color:var(--tx);}
 
-/* ---- well / bracket panel ---- */
+/* ---- well ---- */
 .well{background:var(--well); border:2px solid var(--line); position:relative; padding:14px;}
-.well.bracket::before,.well.bracket::after{content:""; position:absolute; width:14px; height:14px;
-  border-color:var(--cy); border-style:solid; border-width:0;}
-.well.bracket::before{top:-2px; left:-2px; border-top-width:2px; border-left-width:2px;}
-.well.bracket::after{bottom:-2px; right:-2px; border-bottom-width:2px; border-right-width:2px;}
-
 
 /* ---- routine list ---- */
 .list{padding:12px 16px 100px; display:flex; flex-direction:column; gap:10px;}
@@ -62,12 +59,14 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   display:flex; align-items:center; justify-content:center; flex-shrink:0;
   box-shadow: inset 2px 2px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.35);}
 .btn-sq.play{color:var(--cy);}
+.btn-sq.redo{color:var(--ye); font-family:var(--f-mono); font-size:14px; font-weight:700;}
 .btn-sq:active{box-shadow: inset -2px -2px 0 rgba(255,255,255,.05), inset 2px 2px 0 rgba(0,0,0,.35);}
 
-.fab{position:fixed; right:20px; bottom:20px; max-width:480px; width:52px; height:52px; background:var(--cy);
+.fab{position:fixed; right:20px; bottom:20px; width:52px; height:52px; background:var(--cy);
   color:var(--ink); border:2px solid var(--cy-d); display:flex; align-items:center; justify-content:center;
-  font-size:26px; font-weight:700; box-shadow: inset 2px 2px 0 rgba(255,255,255,.35), inset -2px -2px 0 rgba(0,0,0,.35);
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.35), inset -2px -2px 0 rgba(0,0,0,.35);
   z-index:20;}
+.fab .pxi{width:22px; height:22px;}
 .fab:active{box-shadow: inset -2px -2px 0 rgba(255,255,255,.35), inset 2px 2px 0 rgba(0,0,0,.35);}
 
 .empty-hint{color:var(--tx3); font-size:12px; text-align:center; padding:24px 0;}
@@ -93,21 +92,27 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 /* ---- timer view ---- */
 .timer-wrap{flex:1; display:flex; flex-direction:column; padding:16px;}
 .timer-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
-.timer-head button{background:none; border:2px solid var(--line2); width:32px; height:32px; color:var(--tx2);}
-.step-name{font-family:var(--f-dis); font-size:22px; font-weight:700; text-align:center; margin:18px 0 6px;}
-.ring-wrap{width:220px; height:220px; margin:10px auto 0; position:relative;}
-.ring-wrap svg{width:100%; height:100%; shape-rendering:crispEdges; overflow:visible;}
+.timer-head button{background:none; border:2px solid var(--line2); width:32px; height:32px; color:var(--tx2);
+  display:flex; align-items:center; justify-content:center;}
+.timer-head .pxi{width:14px; height:14px;}
+.step-name{font-family:var(--f-dis); font-size:22px; font-weight:700; text-align:center; margin:14px 0 4px;}
+.ring-wrap{width:230px; height:230px; margin:8px auto 0; position:relative;}
+.ring-wrap svg.ring{width:100%; height:100%; shape-rendering:crispEdges; overflow:visible; display:block;}
 .ring-tick{fill:var(--well); stroke:var(--line); stroke-width:1;}
 .ring-tick.on{fill:var(--cy); stroke:var(--cy-d);}
 .ring-tick.warn{fill:var(--or); stroke:#8a4d1c;}
-.ring-tick.over{fill:var(--rd); stroke:#7a2b2b;}
-.countdown{font-family:var(--f-mono); font-size:32px; text-align:center; font-variant-numeric:tabular-nums;
-  letter-spacing:.04em; margin-top:6px;}
-.countdown.over{color:var(--rd); animation:overBlink 1s steps(2) infinite;}
+.ring-tick.over{fill:var(--rd); stroke:#7a2b2b; animation:tickBlink 1s steps(2) infinite;}
+@keyframes tickBlink{50%{fill-opacity:.35;}}
+.ring-inner{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;}
+.ring-inner .countdown{font-family:var(--f-mono); font-size:36px; font-variant-numeric:tabular-nums; letter-spacing:.04em;}
+.ring-inner .countdown.over{color:var(--rd); animation:overBlink 1s steps(2) infinite;}
 @keyframes overBlink{50%{opacity:.35;}}
-.over-label{text-align:center; font-size:11px; color:var(--rd); margin-top:2px; letter-spacing:.05em;}
-.time-adjust{display:flex; justify-content:center; gap:10px; margin-top:12px;}
-.time-adjust button{border:2px solid var(--line2); background:var(--panel); color:var(--tx2); padding:6px 12px; font-size:12px; font-family:var(--f-mono);}
+.ring-inner .step-count{font-family:var(--f-mono); font-size:11px; color:var(--tx3);}
+.ring-inner .over-label{font-size:11px; color:var(--rd); letter-spacing:.05em;}
+.ring-inner .pause-label{font-size:11px; color:var(--tx2); letter-spacing:.05em;}
+.paused .ring-wrap svg.ring{opacity:.45;}
+.time-adjust{display:flex; justify-content:center; gap:10px; margin-top:14px;}
+.time-adjust button{border:2px solid var(--line2); background:var(--panel); color:var(--tx2); padding:6px 14px; font-size:12px; font-family:var(--f-mono);}
 .time-adjust button:active{background:var(--well); color:var(--tx);}
 
 .modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; display:flex; align-items:flex-end; justify-content:center;}
@@ -115,18 +120,22 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .modal-title{font-family:var(--f-dis); font-size:15px; font-weight:700; text-align:center; margin-bottom:6px;}
 .btn-wide.danger{background:var(--panel); color:var(--rd); border-color:var(--rd);}
 .btn-wide.ghost{background:none; color:var(--tx2); border-color:var(--line2); box-shadow:none;}
-.timer-controls{display:flex; justify-content:center; gap:18px; margin:26px 0 10px;}
+.timer-controls{display:flex; justify-content:center; gap:18px; margin:22px 0 10px;}
 .timer-controls button{width:56px; height:56px; border:2px solid var(--line2); background:var(--panel); color:var(--tx);
-  display:flex; align-items:center; justify-content:center; font-size:20px;
+  display:flex; align-items:center; justify-content:center;
   box-shadow: inset 2px 2px 0 rgba(255,255,255,.06), inset -2px -2px 0 rgba(0,0,0,.4);}
+.timer-controls button .pxi{width:20px; height:20px;}
 .timer-controls button.main{background:var(--cy-d); border-color:var(--cy); width:66px; height:66px;}
+.timer-controls button.main .pxi{width:24px; height:24px;}
 .timer-controls button:active{box-shadow: inset -2px -2px 0 rgba(255,255,255,.06), inset 2px 2px 0 rgba(0,0,0,.4);}
 .step-preview{margin-top:auto; border-top:2px solid var(--line); padding-top:10px;}
-.step-preview .row{display:flex; align-items:center; gap:8px; padding:6px 8px; font-size:12px; color:var(--tx2); border-left:3px solid transparent;}
+.step-preview .row{display:flex; align-items:center; gap:8px; padding:7px 8px; font-size:12px; color:var(--tx2);
+  border-left:3px solid transparent; min-height:30px;}
+.step-preview .row .mk{font-family:var(--f-mono); width:12px; flex-shrink:0; color:var(--ye);}
 .step-preview .row.cur{color:var(--ye);}
 .step-preview .row.done{background:rgba(255,210,63,.14); border-left-color:var(--ye); color:var(--tx2);
   text-decoration:line-through; text-decoration-style:solid; text-decoration-color:var(--tx3);}
-.finish-eta{font-family:var(--f-mono); font-size:11px; color:var(--tx3); text-align:center; margin-top:6px;}
+.finish-eta{font-family:var(--f-mono); font-size:11px; color:var(--tx3); text-align:center; margin-top:8px;}
 
 /* ---- celebration ---- */
 .celebrate{position:fixed; inset:0; background:var(--ink); z-index:50; display:flex; align-items:center;
@@ -136,7 +145,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .celebrate .txt{font-family:var(--f-dis); font-size:26px; font-weight:700; color:var(--ye);
   overflow:hidden; white-space:nowrap; width:0; animation:wipe 1s steps(7) forwards .1s;}
 @keyframes wipe{to{width:100%;}}
-.spark{position:absolute; width:6px; height:6px; background:var(--ye);}
+.spark{position:absolute; width:6px; height:6px; background:var(--ye); animation:sparkStep .9s steps(3) forwards;}
+@keyframes sparkStep{to{transform:translateY(-24px); opacity:0;}}
 
 /* ---- summary ---- */
 .summary{padding:16px; display:flex; flex-direction:column; gap:14px;}
@@ -147,11 +157,13 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .total-row{display:flex; align-items:baseline; justify-content:space-between;}
 .total-row .val{font-family:var(--f-mono); font-size:26px;}
 .total-row .diff{font-family:var(--f-mono); font-size:12px; color:var(--tx3); border:1px solid var(--line2); padding:2px 6px;}
+.total-row .diff.overrun{color:var(--rd); border-color:var(--rd);}
 .slist .srow{display:flex; align-items:center; gap:10px; padding:8px; border-top:1px solid var(--line); border-left:3px solid transparent;}
 .slist .srow.done{background:rgba(255,210,63,.14); border-left-color:var(--ye);}
 .slist .srow .nm{flex:1; font-size:13px;}
 .slist .srow .tm{font-family:var(--f-mono); font-size:11px; color:var(--tx2);}
-.slist .srow .ck{color:var(--tx2); font-weight:700;}
+.slist .srow .tm.overrun{color:var(--rd);}
+.slist .srow .ck{color:var(--tx2); font-weight:700; font-family:var(--f-mono);}
 .slist .srow.done .ck{color:var(--ye);}
 .btn-wide{width:100%; padding:14px; text-align:center; background:var(--cy); color:var(--ink); border:2px solid var(--cy-d);
   font-weight:700; font-size:14px; box-shadow: inset 2px 2px 0 rgba(255,255,255,.3), inset -2px -2px 0 rgba(0,0,0,.3);}
@@ -160,16 +172,26 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 /* ---- edit form ---- */
 .form{padding:16px; display:flex; flex-direction:column; gap:14px; padding-bottom:100px;}
 .field label{display:block; font-size:11px; color:var(--tx2); margin-bottom:6px;}
-.field input[type=text],.field input[type=time],.field input[type=number]{
+.field input[type=text],.field input[type=number]{
   width:100%; background:var(--well); border:2px solid var(--line2); color:var(--tx); padding:10px; font-size:14px; font-family:inherit;}
-.steps-edit .step-row{display:flex; gap:8px; align-items:center; padding:8px; background:var(--well); border:1px solid var(--line); margin-bottom:8px;}
-.steps-edit .step-row input[type=text]{flex:2; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:8px; font-family:inherit;}
-.steps-edit .step-row input.dur{flex:0 0 60px; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:8px; font-family:var(--f-mono);}
-.steps-edit .step-row button.rm{flex:0 0 32px; height:32px; background:var(--panel); border:1px solid var(--rd); color:var(--rd);}
-.add-step-btn{border:2px dashed var(--line2); background:none; color:var(--tx2); padding:10px; font-size:12px;}
+.steps-edit .step-row{display:flex; gap:6px; align-items:center; padding:8px; background:var(--well); border:1px solid var(--line); margin-bottom:8px;}
+.steps-edit .step-row input[type=text]{flex:2; min-width:0; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:8px; font-family:inherit;}
+.steps-edit .step-row input.dur{flex:0 0 58px; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:8px; font-family:var(--f-mono);}
+.steps-edit .step-row .ord{display:flex; flex-direction:column; gap:2px; flex-shrink:0;}
+.steps-edit .step-row .ord button{width:24px; height:15px; background:var(--panel); border:1px solid var(--line2); color:var(--tx3);
+  display:flex; align-items:center; justify-content:center; padding:0;}
+.steps-edit .step-row .ord button .pxi{width:10px; height:10px;}
+.steps-edit .step-row .ord button:disabled{opacity:.25;}
+.steps-edit .step-row button.rm{flex:0 0 30px; height:30px; background:var(--panel); border:1px solid var(--rd); color:var(--rd);
+  display:flex; align-items:center; justify-content:center;}
+.steps-edit .step-row button.rm .pxi{width:12px; height:12px;}
+.add-step-btn{border:2px dashed var(--line2); background:none; color:var(--tx2); padding:10px; font-size:12px; width:100%;}
 .danger-btn{border:2px solid var(--rd); background:var(--panel); color:var(--rd); padding:12px; font-size:13px; font-weight:700;}
 
-.hidden{display:none !important;}
+@media (prefers-reduced-motion: reduce){
+  .ring-tick.over,.ring-inner .countdown.over,.celebrate.flash,.spark{animation:none;}
+  .celebrate .txt{animation:none; width:100%;}
+}
 </style>
 </head>
 <body>
@@ -177,6 +199,65 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 <script>
 "use strict";
+
+/* ============ pixel icons (rect-only, PC-98 style) ============ */
+function px(shapes, cls){
+  const rects = shapes.map(s=>`<rect x="${s[0]}" y="${s[1]}" width="${s[2]}" height="${s[3]}"></rect>`).join("");
+  return `<svg viewBox="0 0 16 16" class="pxi${cls?" "+cls:""}" aria-hidden="true">${rects}</svg>`;
+}
+const ICON = {
+  play:  [[5,3,2,10],[7,4,2,8],[9,5,2,6],[11,6,2,4]],
+  pause: [[4,3,3,10],[9,3,3,10]],
+  check: [[2,8,2,2],[3,9,2,2],[4,10,2,2],[5,9,2,2],[6,8,2,2],[7,7,2,2],[8,6,2,2],[9,5,2,2],[10,4,2,2],[11,3,2,2]],
+  skip:  [[3,3,2,10],[5,4,2,8],[7,5,2,6],[9,6,2,4],[12,3,2,10]],
+  close: [[3,3,2,2],[5,5,2,2],[7,7,2,2],[9,9,2,2],[11,11,2,2],[11,3,2,2],[9,5,2,2],[5,9,2,2],[3,11,2,2]],
+  plus:  [[7,3,2,10],[3,7,10,2]],
+  up:    [[7,4,2,2],[5,6,6,2],[3,8,10,2]],
+  down:  [[3,6,10,2],[5,8,6,2],[7,10,2,2]]
+};
+
+/* ============ sound / vibration ============ */
+let audioCtx = null;
+function ensureAudio(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state === "suspended") audioCtx.resume();
+  }catch(e){}
+}
+function beep(freq, dur, when){
+  if(!audioCtx) return;
+  try{
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = "square"; o.frequency.value = freq;
+    g.gain.value = 0.04;
+    o.connect(g); g.connect(audioCtx.destination);
+    const t = audioCtx.currentTime + (when||0);
+    o.start(t); o.stop(t + dur);
+  }catch(e){}
+}
+function beepTimeUp(){
+  ensureAudio();
+  beep(880, 0.09, 0);
+  beep(1320, 0.12, 0.15);
+  if(navigator.vibrate) navigator.vibrate([120,60,120]);
+}
+function beepAdvance(){
+  ensureAudio();
+  beep(660, 0.06, 0);
+}
+
+/* ============ wake lock ============ */
+let wakeLock = null;
+async function acquireWakeLock(){
+  try{ if("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); }catch(e){}
+}
+function releaseWakeLock(){
+  try{ if(wakeLock) wakeLock.release(); }catch(e){}
+  wakeLock = null;
+}
+document.addEventListener("visibilitychange", ()=>{
+  if(document.visibilityState==="visible" && timerState) acquireWakeLock();
+});
 
 /* ============ storage ============ */
 const STORE_KEY = "routineforge_data_v1";
@@ -203,7 +284,7 @@ function loadData(){
         ]
       }
     ],
-    logs: [] // {date:"YYYY-MM-DD", routineId, actualSeconds, plannedSeconds, steps:[{name,duration,actual}]}
+    logs: [] // {date:"YYYY-MM-DD", routineId, actualSeconds, plannedSeconds, startTime, steps:[{name,duration,actual}]}
   };
   saveData(data);
   return data;
@@ -223,7 +304,7 @@ function computeStreak(routineId){
   for(let i=0;i<400;i++){
     const ds = todayStr(cur);
     if(set.has(ds)){ streak++; }
-    else if(ds===todayStr()){ /* today not done yet, skip without breaking */ }
+    else if(ds===todayStr()){ /* today not done yet */ }
     else { break; }
     cur.setDate(cur.getDate()-1);
   }
@@ -231,20 +312,21 @@ function computeStreak(routineId){
 }
 function totalDays(routineId){ return DATA.logs.filter(l=>l.routineId===routineId).length; }
 
-function computeMaxStreak(routineId){
-  const logDates = new Set(DATA.logs.filter(l=>l.routineId===routineId).map(l=>l.date));
-  if(logDates.size===0) return 0;
-  const sorted = Array.from(logDates).sort();
+function maxStreakOfDates(dateSet){
+  if(dateSet.size===0) return 0;
+  const sorted = Array.from(dateSet).sort();
   let d = new Date(sorted[0]);
   const end = new Date();
   let max=0, cur=0;
   while(d<=end){
-    if(logDates.has(todayStr(d))){ cur++; max=Math.max(max,cur); } else { cur=0; }
+    if(dateSet.has(todayStr(d))){ cur++; max=Math.max(max,cur); } else { cur=0; }
     d.setDate(d.getDate()+1);
   }
   return max;
 }
-
+function computeMaxStreak(routineId){
+  return maxStreakOfDates(new Set(DATA.logs.filter(l=>l.routineId===routineId).map(l=>l.date)));
+}
 function allCurrentStreak(){
   const dates = new Set(DATA.logs.map(l=>l.date));
   let streak=0, d=new Date();
@@ -256,19 +338,8 @@ function allCurrentStreak(){
   }
   return streak;
 }
-
 function allMaxStreak(){
-  const dates = new Set(DATA.logs.map(l=>l.date));
-  if(dates.size===0) return 0;
-  const sorted = Array.from(dates).sort();
-  let d = new Date(sorted[0]);
-  const end = new Date();
-  let max=0, cur=0;
-  while(d<=end){
-    if(dates.has(todayStr(d))){ cur++; max=Math.max(max,cur); } else { cur=0; }
-    d.setDate(d.getDate()+1);
-  }
-  return max;
+  return maxStreakOfDates(new Set(DATA.logs.map(l=>l.date)));
 }
 
 function avgStats(logsArr){
@@ -363,7 +434,6 @@ const root = document.getElementById("app");
 
 function nav(view){ VIEW = view; render(); }
 
-/* ============ render dispatch ============ */
 function render(){
   if(VIEW.name==="list") renderList();
   else if(VIEW.name==="stats") renderStats();
@@ -377,14 +447,17 @@ function renderList(){
   const cards = DATA.routines.map(r=>{
     const streak = computeStreak(r.id);
     const doneToday = DATA.logs.some(l=>l.routineId===r.id && l.date===todayStr());
+    const btn = doneToday
+      ? `<button class="btn-sq redo" data-start="${r.id}" aria-label="もう一度実行">済</button>`
+      : `<button class="btn-sq play" data-start="${r.id}" aria-label="開始">${px(ICON.play)}</button>`;
     return `
     <div class="well rcard${doneToday? " done-today" : ""}">
       <div class="meta" data-edit="${r.id}">
         <div class="name">${escapeHtml(r.name)}</div>
-        <div class="sub">全${r.steps.length}項目</div>
+        <div class="sub">全${r.steps.length}項目　${fmtTotal(r)}</div>
       </div>
       <div class="streak"><b>${streak}</b>継続日</div>
-      <button class="btn-sq play" data-start="${r.id}">${doneToday? "↻" : "▶"}</button>
+      ${btn}
     </div>`;
   }).join("");
 
@@ -399,7 +472,7 @@ function renderList(){
     <div class="list">
       ${cards || `<div class="empty-hint">右下の＋からルーティンを追加してください</div>`}
     </div>
-    <button class="fab" id="fabAdd">＋</button>
+    <button class="fab" id="fabAdd" aria-label="ルーティンを追加">${px(ICON.plus)}</button>
   `;
   root.querySelectorAll("[data-start]").forEach(el=>{
     el.addEventListener("click", ()=> startRoutine(el.dataset.start));
@@ -413,18 +486,32 @@ function renderList(){
   document.getElementById("fabAdd").addEventListener("click", ()=> nav({name:"edit", routineId:null}));
 }
 
+function fmtTotal(r){
+  const sec = r.steps.reduce((a,s)=>a+s.duration,0);
+  const m = Math.round(sec/60);
+  return `約${m}分`;
+}
+
 function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 
-/* ============ TIMER VIEW ============ */
-let timerState = null; // {routine, idx, remaining, running, timerHandle, stepActuals:[]}
+/* ============ TIMER ============ */
+let timerState = null;
 
 function startRoutine(routineId){
   const routine = DATA.routines.find(r=>r.id===routineId);
   if(!routine || routine.steps.length===0) return;
+  ensureAudio();
+  acquireWakeLock();
   const steps = routine.steps.map(s=>({...s}));
   timerState = { routine, steps, idx:0, remaining: steps[0].duration, elapsed:0, running:true, stepActuals:[], startedAt: Date.now() };
   nav({name:"timer"});
   runTick();
+}
+
+function stopTimer(){
+  if(timerState){ clearInterval(timerState.timerHandle); }
+  timerState = null;
+  releaseWakeLock();
 }
 
 function runTick(){
@@ -433,6 +520,7 @@ function runTick(){
     if(!timerState || !timerState.running) return;
     timerState.remaining--;
     timerState.elapsed++;
+    if(timerState.remaining === 0) beepTimeUp();
     updateTimerDynamic();
   }, 1000);
 }
@@ -446,6 +534,7 @@ function adjustRemaining(deltaSec){
 function completeCurrentStep(){
   const step = timerState.steps[timerState.idx];
   timerState.stepActuals.push({name:step.name, duration:step.duration, actual:timerState.elapsed});
+  beepAdvance();
   advanceAfterStep();
 }
 
@@ -504,7 +593,9 @@ function finishRoutine(){
     actualSeconds: actualTotal, startTime, steps: timerState.stepActuals };
   DATA.logs.push(log);
   saveData(DATA);
+  releaseWakeLock();
   const streak = computeStreak(routine.id);
+  timerState = null;
   showCelebration(streak, ()=> nav({name:"summary", log, routine}));
 }
 
@@ -517,6 +608,7 @@ function showCelebration(streak, done){
     s.className = "spark";
     s.style.left = (10+Math.random()*80)+"%";
     s.style.top = (20+Math.random()*60)+"%";
+    s.style.animationDelay = (Math.random()*0.5)+"s";
     el.appendChild(s);
   }
   document.body.appendChild(el);
@@ -551,54 +643,62 @@ function ringSVG(arr){
   for(let i=0;i<arr.length;i++){
     const angle = i*(360/arr.length);
     const cls = "ring-tick" + (arr[i] ? " "+arr[i] : "");
-    ticks += `<rect class="${cls}" x="47" y="4" width="6" height="16" transform="rotate(${angle} 50 50)"></rect>`;
+    ticks += `<rect class="${cls}" x="47" y="2" width="6" height="14" transform="rotate(${angle} 50 50)"></rect>`;
   }
-  return `<svg viewBox="0 0 100 100">${ticks}</svg>`;
+  return `<svg class="ring" viewBox="0 0 100 100">${ticks}</svg>`;
+}
+
+function etaInfo(){
+  const { idx, remaining, steps } = timerState;
+  const remainingStepsSec = steps.slice(idx).reduce((a,s,i)=> a + (i===0?Math.max(0,remaining):s.duration),0);
+  const eta = new Date(Date.now()+remainingStepsSec*1000);
+  const etaStr = `${String(eta.getHours()).padStart(2,"0")}:${String(eta.getMinutes()).padStart(2,"0")}`;
+  return `残り ${fmtMMSS(remainingStepsSec)}　　終了予定 ${etaStr}`;
 }
 
 function renderTimer(){
-  const { idx, remaining, steps } = timerState;
+  const { idx, remaining, steps, running } = timerState;
   const step = steps[idx];
   const { arr, overtime } = tickClasses(step.duration, remaining);
 
   const previewRows = steps.map((s,i)=>{
     let cls = "row";
     if(i<idx) cls+=" done"; else if(i===idx) cls+=" cur";
-    return `<div class="${cls}">${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.floor(s.duration/60)}m</span></div>`;
+    const mk = i===idx ? "▶" : (i<idx ? "" : "");
+    return `<div class="${cls}"><span class="mk">${mk}</span>${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.floor(s.duration/60)}m</span></div>`;
   }).join("");
 
-  const remainingStepsSec = steps.slice(idx).reduce((a,s,i)=> a + (i===0?Math.max(0,remaining):s.duration),0);
-  const eta = new Date(Date.now()+remainingStepsSec*1000);
-  const etaStr = `${String(eta.getHours()).padStart(2,"0")}:${String(eta.getMinutes()).padStart(2,"0")}`;
-
   root.innerHTML = `
-    <div class="timer-wrap">
+    <div class="timer-wrap${running? "" : " paused"}">
       <div class="timer-head">
-        <button id="tClose">×</button>
-        <div class="mono" style="font-size:11px;color:var(--tx2)">${idx+1} / ${steps.length}</div>
+        <button id="tClose" aria-label="中断して戻る">${px(ICON.close)}</button>
+        <div class="mono" style="font-size:11px;color:var(--tx2)">${escapeHtml(timerState.routine.name)}</div>
         <div style="width:32px"></div>
       </div>
       <div class="step-name">${escapeHtml(step.name)}</div>
       <div class="ring-wrap">
         ${ringSVG(arr)}
+        <div class="ring-inner">
+          <div class="countdown${overtime?' over':''}" id="cd">${fmtMMSS(remaining)}</div>
+          <div class="step-count">${idx+1} / ${steps.length}</div>
+          <div id="stateLabel">${overtime? `<div class="over-label">予定時間オーバー</div>` : (running? "" : `<div class="pause-label">一時停止中</div>`)}</div>
+        </div>
       </div>
-      <div class="countdown${overtime?' over':''}">${fmtMMSS(remaining)}</div>
-      ${overtime? `<div class="over-label">予定時間オーバー</div>` : ""}
       <div class="time-adjust">
         <button id="tMinus">−30秒</button>
         <button id="tPlus">+30秒</button>
       </div>
       <div class="timer-controls">
-        <button id="tPause">${timerState.running? "⏸" : "▶"}</button>
-        <button class="main" id="tDone">✓</button>
-        <button id="tSkip">⏭</button>
+        <button id="tPause" aria-label="${running? "一時停止":"再開"}">${px(running? ICON.pause : ICON.play)}</button>
+        <button class="main" id="tDone" aria-label="このステップを完了">${px(ICON.check)}</button>
+        <button id="tSkip" aria-label="スキップ">${px(ICON.skip)}</button>
       </div>
       <div class="step-preview">${previewRows}</div>
-      <div class="finish-eta">全体終了予定　${etaStr}</div>
+      <div class="finish-eta" id="etaLine">${etaInfo()}</div>
     </div>
   `;
   document.getElementById("tClose").addEventListener("click", ()=>{
-    clearInterval(timerState.timerHandle); timerState=null; nav({name:"list"});
+    stopTimer(); nav({name:"list"});
   });
   document.getElementById("tPause").addEventListener("click", ()=>{
     timerState.running = !timerState.running; renderTimer();
@@ -610,10 +710,11 @@ function renderTimer(){
 }
 
 function updateTimerDynamic(){
+  if(!timerState) return;
   const step = timerState.steps[timerState.idx];
   const { arr, overtime } = tickClasses(step.duration, timerState.remaining);
 
-  const cd = root.querySelector(".countdown");
+  const cd = document.getElementById("cd");
   if(cd){
     cd.textContent = fmtMMSS(timerState.remaining);
     cd.className = "countdown" + (overtime?" over":"");
@@ -621,37 +722,38 @@ function updateTimerDynamic(){
   root.querySelectorAll(".ring-tick").forEach((el,i)=>{
     el.setAttribute("class", "ring-tick" + (arr[i] ? " "+arr[i] : ""));
   });
-  const wrap = root.querySelector(".timer-wrap");
-  const existingLabel = root.querySelector(".over-label");
-  if(overtime && !existingLabel && wrap){
-    const lbl = document.createElement("div");
-    lbl.className = "over-label";
-    lbl.textContent = "予定時間オーバー";
-    cd.insertAdjacentElement("afterend", lbl);
-  } else if(!overtime && existingLabel){
-    existingLabel.remove();
+  const stateLabel = document.getElementById("stateLabel");
+  if(stateLabel){
+    stateLabel.innerHTML = overtime ? `<div class="over-label">予定時間オーバー</div>`
+      : (timerState.running ? "" : `<div class="pause-label">一時停止中</div>`);
   }
+  const etaLine = document.getElementById("etaLine");
+  if(etaLine) etaLine.textContent = etaInfo();
 }
 
-/* ============ SUMMARY VIEW ============ */
+/* ============ SUMMARY ============ */
 function renderSummary(){
   const { log, routine } = VIEW;
   const streak = computeStreak(routine.id);
   const total = totalDays(routine.id);
-  const diff = log.plannedSeconds - log.actualSeconds;
-  const diffStr = (diff>=0? "-":"+") + fmtMMSS(Math.abs(diff));
+  const diff = log.actualSeconds - log.plannedSeconds;
+  const overrun = diff > 0;
+  const diffStr = (overrun? "+":"-") + fmtMMSS(Math.abs(diff));
 
-  const rows = log.steps.map(s=>`
+  const rows = log.steps.map(s=>{
+    const stepOver = !s.skipped && s.actual > s.duration;
+    return `
     <div class="srow${s.skipped? "" : " done"}">
       <div class="nm">${escapeHtml(s.name)}</div>
-      <div class="tm mono">${Math.floor(s.actual/60)}m ${s.actual%60}s</div>
+      <div class="tm mono${stepOver? " overrun":""}">${Math.floor(s.actual/60)}m ${s.actual%60}s</div>
       <div class="ck">${s.skipped? "－" : "✓"}</div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 
   root.innerHTML = `
     <div class="topbar">
       <div class="brand">${escapeHtml(routine.name)}</div>
-      <div style="width:20px"></div>
+      <div class="mono" style="font-size:11px;color:var(--tx3)">${log.startTime||""} 開始</div>
     </div>
     <div class="summary">
       <div class="well stat-row">
@@ -662,7 +764,7 @@ function renderSummary(){
         <div class="total-row">
           <div><div class="lbl" style="font-size:11px;color:var(--tx2)">合計</div>
           <div class="val mono">${fmtMMSS(log.actualSeconds)}</div></div>
-          <div class="diff">${diffStr}</div>
+          <div class="diff${overrun? " overrun":""}">${diffStr}</div>
         </div>
         <div class="slist">${rows}</div>
       </div>
@@ -672,7 +774,7 @@ function renderSummary(){
   document.getElementById("backList").addEventListener("click", ()=> nav({name:"list"}));
 }
 
-/* ============ EDIT VIEW ============ */
+/* ============ EDIT ============ */
 let editDraft = null;
 
 function renderEdit(){
@@ -688,15 +790,19 @@ function paintEdit(){
   const d = editDraft;
   const stepsHtml = d.steps.map((s,i)=>`
     <div class="step-row" data-idx="${i}">
+      <div class="ord">
+        <button data-mv="${i},-1" ${i===0?"disabled":""} aria-label="上へ">${px(ICON.up)}</button>
+        <button data-mv="${i},1" ${i===d.steps.length-1?"disabled":""} aria-label="下へ">${px(ICON.down)}</button>
+      </div>
       <input type="text" value="${escapeHtml(s.name)}" placeholder="ステップ名" data-field="name" data-idx="${i}" />
       <input type="number" class="dur" min="10" step="10" value="${s.duration}" data-field="duration" data-idx="${i}" />
-      <button class="rm" data-rm="${i}">×</button>
+      <button class="rm" data-rm="${i}" aria-label="削除">${px(ICON.close)}</button>
     </div>`).join("");
 
   root.innerHTML = `
     <div class="topbar">
       <button id="eCancel" style="background:none;border:none;color:var(--tx2);font-size:13px;">キャンセル</button>
-      <div class="brand">${editDraft.id.startsWith('r_') && !DATA.routines.find(r=>r.id===editDraft.id) ? '新規ルーティン' : '編集'}</div>
+      <div class="brand">${DATA.routines.find(r=>r.id===d.id) ? '編集' : '新規ルーティン'}</div>
       <div style="width:50px"></div>
     </div>
     <div class="form">
@@ -705,7 +811,7 @@ function paintEdit(){
         <input type="text" id="fName" value="${escapeHtml(d.name)}" placeholder="例: 朝のルーティン" />
       </div>
       <div class="field">
-        <label>ステップ</label>
+        <label>ステップ（秒数は1項目あたりの予定時間）</label>
         <div class="steps-edit" id="stepsEdit">${stepsHtml}</div>
         <button class="add-step-btn" id="addStep">＋ ステップを追加</button>
       </div>
@@ -722,6 +828,15 @@ function paintEdit(){
       d.steps[i][f] = f==="duration" ? Math.max(10, Number(inp.value)||10) : inp.value;
     });
   });
+  root.querySelectorAll("[data-mv]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const [i, dir] = btn.dataset.mv.split(",").map(Number);
+      const j = i + dir;
+      if(j<0 || j>=d.steps.length) return;
+      [d.steps[i], d.steps[j]] = [d.steps[j], d.steps[i]];
+      paintEdit();
+    });
+  });
   root.querySelectorAll("[data-rm]").forEach(btn=>{
     btn.addEventListener("click", ()=>{
       d.steps.splice(Number(btn.dataset.rm),1); paintEdit();
@@ -730,9 +845,12 @@ function paintEdit(){
   document.getElementById("addStep").addEventListener("click", ()=>{
     d.steps.push({id:"s_"+Date.now(), name:"", duration:120});
     paintEdit();
+    const inputs = root.querySelectorAll('[data-field="name"]');
+    if(inputs.length) inputs[inputs.length-1].focus();
   });
   document.getElementById("saveRoutine").addEventListener("click", ()=>{
     if(!d.name.trim()){ alert("ルーティン名を入力してください"); return; }
+    d.steps = d.steps.filter(s=>s.name.trim());
     if(d.steps.length===0){ alert("ステップを1つ以上追加してください"); return; }
     const idx = DATA.routines.findIndex(r=>r.id===d.id);
     if(idx>=0) DATA.routines[idx] = d; else DATA.routines.push(d);
