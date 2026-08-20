@@ -51,7 +51,8 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 
 /* ---- routine list ---- */
 .list{padding:12px 16px 100px; display:flex; flex-direction:column; gap:10px;}
-.rcard{display:flex; align-items:center; gap:12px; padding:12px;}
+.rcard{display:flex; align-items:center; gap:12px; padding:12px; border-left:3px solid transparent;}
+.rcard.done-today{background:rgba(255,210,63,.14); border-left-color:var(--ye);}
 .rcard .meta{flex:1; min-width:0;}
 .rcard .meta .name{font-family:var(--f-dis); font-size:15px; font-weight:700;}
 .rcard .meta .sub{font-size:11px; color:var(--tx2); margin-top:4px; font-family:var(--f-mono);}
@@ -379,7 +380,7 @@ function renderList(){
     const streak = computeStreak(r.id);
     const doneToday = DATA.logs.some(l=>l.routineId===r.id && l.date===todayStr());
     return `
-    <div class="well rcard">
+    <div class="well rcard${doneToday? " done-today" : ""}">
       <div class="meta" data-edit="${r.id}">
         <div class="name">${escapeHtml(r.name)}</div>
         <div class="sub">全${r.steps.length}項目</div>
