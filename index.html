@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-title" content="RoutineForge" />
 <style>
 :root{
-  --ink:#0F141A; --panel:#161C24; --well:#1B222C; --line:#28323E; --line2:#394656;
+  --ink:#000000; --panel:#161C24; --well:#1B222C; --line:#28323E; --line2:#394656;
   --tx:#E8EFF6; --tx2:#93A2B3; --tx3:#61707F;
   --cy:#28b6ff; --cy-d:#0d5f8a;
   --ye:#FFD23F; --rd:#FF6B6B; --or:#E8873C;
@@ -101,8 +101,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .ring-tick.on{fill:var(--cy); stroke:var(--cy-d);}
 .ring-tick.warn{fill:var(--or); stroke:#8a4d1c;}
 .ring-tick.over{fill:var(--rd); stroke:#7a2b2b;}
-.ring-center{position:absolute; inset:64px; background:var(--well); border:2px solid var(--line2);
-  display:flex; align-items:center; justify-content:center; flex-direction:column;}
 .countdown{font-family:var(--f-mono); font-size:32px; text-align:center; font-variant-numeric:tabular-nums;
   letter-spacing:.04em; margin-top:6px;}
 .countdown.over{color:var(--rd); animation:overBlink 1s steps(2) infinite;}
@@ -583,7 +581,6 @@ function renderTimer(){
       <div class="step-name">${escapeHtml(step.name)}</div>
       <div class="ring-wrap">
         ${ringSVG(arr)}
-        <div class="ring-center"></div>
       </div>
       <div class="countdown${overtime?' over':''}">${fmtMMSS(remaining)}</div>
       ${overtime? `<div class="over-label">予定時間オーバー</div>` : ""}
