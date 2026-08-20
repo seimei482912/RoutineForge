@@ -1,0 +1,599 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<title>RoutineForge</title>
+<meta name="theme-color" content="#0F141A" />
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icons/icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="RoutineForge" />
+<style>
+:root{
+  --ink:#0F141A; --panel:#161C24; --well:#1B222C; --line:#28323E; --line2:#394656;
+  --tx:#E8EFF6; --tx2:#93A2B3; --tx3:#61707F;
+  --cy:#28b6ff; --cy-d:#0d5f8a;
+  --ye:#FFD23F; --rd:#FF6B6B; --or:#E8873C;
+  --f-ui:"Yu Gothic UI","Meiryo",sans-serif;
+  --f-dis:"BIZ UDPGothic","BIZ UDGothic","Yu Gothic UI",sans-serif;
+  --f-mono:"MS Gothic","Consolas",monospace;
+}
+*{box-sizing:border-box; border-radius:0 !important;}
+html,body{margin:0;padding:0;background:var(--ink);color:var(--tx);font-family:var(--f-ui);
+  -webkit-font-smoothing:antialiased; font-feature-settings:"palt" 1; overscroll-behavior:none;}
+body{
+  background-image:repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 1px, transparent 4px),
+                    repeating-linear-gradient(90deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 1px, transparent 4px);
+}
+button{font-family:inherit; color:inherit; cursor:pointer;}
+.mono{font-family:var(--f-mono); font-variant-numeric:tabular-nums;}
+#app{max-width:480px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom);}
+
+/* ---- top bar ---- */
+.topbar{background:var(--panel); border-bottom:2px solid var(--line2); padding:14px 16px;
+  display:flex; align-items:center; justify-content:space-between;}
+.brand{font-family:var(--f-dis); font-weight:700; font-size:15px; letter-spacing:.12em; color:var(--cy);}
+.tabs{display:flex; gap:0; border:2px solid var(--line2);}
+.tabs button{background:var(--well); border:none; padding:6px 12px; font-size:12px; color:var(--tx2);}
+.tabs button + button{border-left:2px solid var(--line2);}
+.tabs button.active{background:var(--cy-d); color:var(--tx);}
+
+/* ---- well / bracket panel ---- */
+.well{background:var(--well); border:2px solid var(--line); position:relative; padding:14px;}
+.well.bracket::before,.well.bracket::after{content:""; position:absolute; width:14px; height:14px;
+  border-color:var(--cy); border-style:solid; border-width:0;}
+.well.bracket::before{top:-2px; left:-2px; border-top-width:2px; border-left-width:2px;}
+.well.bracket::after{bottom:-2px; right:-2px; border-bottom-width:2px; border-right-width:2px;}
+
+/* ---- week strip ---- */
+.week{display:flex; gap:6px; padding:14px 16px 4px;}
+.week .day{flex:1; aspect-ratio:1; border:2px dashed var(--line2); display:flex; align-items:center;
+  justify-content:center; font-family:var(--f-mono); font-size:12px; color:var(--tx3);}
+.week .day.done{background:var(--cy); border:2px solid var(--cy-d); color:var(--ink); border-style:solid;
+  box-shadow:inset -3px -3px 0 rgba(0,0,0,.25);}
+.week .day.today{background:var(--ye); border:2px solid #8a6a10; color:var(--ink); border-style:solid;
+  box-shadow:inset -3px -3px 0 rgba(0,0,0,.25);}
+
+/* ---- routine list ---- */
+.list{padding:12px 16px 100px; display:flex; flex-direction:column; gap:10px;}
+.rcard{display:flex; align-items:center; gap:12px; padding:12px;}
+.rcard .icon{width:44px; height:44px; background:var(--panel); border:2px solid var(--line2);
+  display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;}
+.rcard .meta{flex:1; min-width:0;}
+.rcard .meta .name{font-family:var(--f-dis); font-size:15px; font-weight:700;}
+.rcard .meta .sub{font-size:11px; color:var(--tx2); margin-top:4px; font-family:var(--f-mono);}
+.rcard .streak{font-family:var(--f-mono); font-size:11px; color:var(--ye); text-align:right; margin-right:4px;}
+.rcard .streak b{font-size:16px; display:block;}
+.btn-sq{border:2px solid var(--line2); background:var(--panel); width:38px; height:38px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.05), inset -2px -2px 0 rgba(0,0,0,.35);}
+.btn-sq.play{color:var(--cy);}
+.btn-sq:active{box-shadow: inset -2px -2px 0 rgba(255,255,255,.05), inset 2px 2px 0 rgba(0,0,0,.35);}
+
+.fab{position:fixed; right:20px; bottom:20px; max-width:480px; width:52px; height:52px; background:var(--cy);
+  color:var(--ink); border:2px solid var(--cy-d); display:flex; align-items:center; justify-content:center;
+  font-size:26px; font-weight:700; box-shadow: inset 2px 2px 0 rgba(255,255,255,.35), inset -2px -2px 0 rgba(0,0,0,.35);
+  z-index:20;}
+.fab:active{box-shadow: inset -2px -2px 0 rgba(255,255,255,.35), inset 2px 2px 0 rgba(0,0,0,.35);}
+
+.empty-hint{color:var(--tx3); font-size:12px; text-align:center; padding:24px 0;}
+
+/* ---- timer view ---- */
+.timer-wrap{flex:1; display:flex; flex-direction:column; padding:16px;}
+.timer-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+.timer-head button{background:none; border:2px solid var(--line2); width:32px; height:32px; color:var(--tx2);}
+.step-name{font-family:var(--f-dis); font-size:22px; font-weight:700; text-align:center; margin:18px 0 6px;}
+.step-icon{width:96px; height:96px; margin:6px auto 18px; background:var(--well); border:2px solid var(--line);
+  display:flex; align-items:center; justify-content:center; font-size:48px; position:relative;}
+.step-icon::before,.step-icon::after{content:""; position:absolute; width:16px; height:16px; border-color:var(--cy); border-style:solid; border-width:0;}
+.step-icon::before{top:-2px; left:-2px; border-top-width:2px; border-left-width:2px;}
+.step-icon::after{bottom:-2px; right:-2px; border-bottom-width:2px; border-right-width:2px;}
+.countdown{font-family:var(--f-mono); font-size:56px; text-align:center; font-variant-numeric:tabular-nums; letter-spacing:.04em;}
+.seg-bar{display:flex; gap:2px; margin:14px auto 0; width:100%; max-width:320px;}
+.seg-bar i{flex:1; height:14px; background:var(--well); border:1px solid var(--line);}
+.seg-bar i.on{background:var(--cy); border-color:var(--cy-d);}
+.seg-bar i.warn{background:var(--or); border-color:#8a4d1c;}
+.timer-controls{display:flex; justify-content:center; gap:18px; margin:26px 0 10px;}
+.timer-controls button{width:56px; height:56px; border:2px solid var(--line2); background:var(--panel); color:var(--tx);
+  display:flex; align-items:center; justify-content:center; font-size:20px;
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.06), inset -2px -2px 0 rgba(0,0,0,.4);}
+.timer-controls button.main{background:var(--cy-d); border-color:var(--cy); width:66px; height:66px;}
+.timer-controls button:active{box-shadow: inset -2px -2px 0 rgba(255,255,255,.06), inset 2px 2px 0 rgba(0,0,0,.4);}
+.step-preview{margin-top:auto; border-top:2px solid var(--line); padding-top:10px;}
+.step-preview .row{display:flex; align-items:center; gap:8px; padding:6px 4px; font-size:12px; color:var(--tx2);}
+.step-preview .row.cur{color:var(--ye);}
+.step-preview .row.done{color:var(--cy); text-decoration:line-through; text-decoration-style:solid;}
+.finish-eta{font-family:var(--f-mono); font-size:11px; color:var(--tx3); text-align:center; margin-top:6px;}
+
+/* ---- celebration ---- */
+.celebrate{position:fixed; inset:0; background:var(--ink); z-index:50; display:flex; align-items:center;
+  justify-content:center; flex-direction:column;}
+.celebrate.flash{animation:flash .5s steps(3);}
+@keyframes flash{0%{background:var(--ye);} 100%{background:var(--ink);}}
+.celebrate .txt{font-family:var(--f-dis); font-size:26px; font-weight:700; color:var(--ye);
+  overflow:hidden; white-space:nowrap; width:0; animation:wipe 1s steps(7) forwards .1s;}
+@keyframes wipe{to{width:100%;}}
+.spark{position:absolute; width:6px; height:6px; background:var(--ye);}
+
+/* ---- summary ---- */
+.summary{padding:16px; display:flex; flex-direction:column; gap:14px;}
+.stat-row{display:flex; gap:10px;}
+.stat-tile{flex:1; text-align:center; padding:14px 0;}
+.stat-tile .lbl{font-size:11px; color:var(--tx2);}
+.stat-tile .val{font-family:var(--f-mono); font-size:30px; font-weight:700; margin-top:4px; color:var(--cy);}
+.total-row{display:flex; align-items:baseline; justify-content:space-between;}
+.total-row .val{font-family:var(--f-mono); font-size:26px;}
+.total-row .diff{font-family:var(--f-mono); font-size:12px; color:var(--tx3); border:1px solid var(--line2); padding:2px 6px;}
+.slist .srow{display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--line);}
+.slist .srow .ic{width:30px; height:30px; background:var(--panel); border:1px solid var(--line2);
+  display:flex; align-items:center; justify-content:center; font-size:15px;}
+.slist .srow .nm{flex:1; font-size:13px;}
+.slist .srow .tm{font-family:var(--f-mono); font-size:11px; color:var(--tx2);}
+.slist .srow .ck{color:var(--cy); font-weight:700;}
+.btn-wide{width:100%; padding:14px; text-align:center; background:var(--cy); color:var(--ink); border:2px solid var(--cy-d);
+  font-weight:700; font-size:14px; box-shadow: inset 2px 2px 0 rgba(255,255,255,.3), inset -2px -2px 0 rgba(0,0,0,.3);}
+.btn-wide:active{box-shadow: inset -2px -2px 0 rgba(255,255,255,.3), inset 2px 2px 0 rgba(0,0,0,.3);}
+
+/* ---- edit form ---- */
+.form{padding:16px; display:flex; flex-direction:column; gap:14px; padding-bottom:100px;}
+.field label{display:block; font-size:11px; color:var(--tx2); margin-bottom:6px;}
+.field input[type=text],.field input[type=time],.field input[type=number]{
+  width:100%; background:var(--well); border:2px solid var(--line2); color:var(--tx); padding:10px; font-size:14px; font-family:inherit;}
+.days-pick{display:flex; gap:6px;}
+.days-pick button{flex:1; aspect-ratio:1; background:var(--well); border:2px dashed var(--line2); color:var(--tx3); font-family:var(--f-mono);}
+.days-pick button.on{background:var(--cy); border-style:solid; border-color:var(--cy-d); color:var(--ink); font-weight:700;}
+.steps-edit .step-row{display:flex; gap:8px; align-items:center; padding:8px; background:var(--well); border:1px solid var(--line); margin-bottom:8px;}
+.steps-edit .step-row input[type=text]{flex:2; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:8px; font-family:inherit;}
+.steps-edit .step-row input.emoji{flex:0 0 46px; text-align:center;}
+.steps-edit .step-row input.dur{flex:0 0 60px; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:8px; font-family:var(--f-mono);}
+.steps-edit .step-row button.rm{flex:0 0 32px; height:32px; background:var(--panel); border:1px solid var(--rd); color:var(--rd);}
+.add-step-btn{border:2px dashed var(--line2); background:none; color:var(--tx2); padding:10px; font-size:12px;}
+.danger-btn{border:2px solid var(--rd); background:var(--panel); color:var(--rd); padding:12px; font-size:13px; font-weight:700;}
+
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+"use strict";
+
+/* ============ storage ============ */
+const STORE_KEY = "routineforge_data_v1";
+const DAY_LABELS = ["月","火","水","木","金","土","日"];
+
+function loadData(){
+  const raw = localStorage.getItem(STORE_KEY);
+  if(raw){ try{ return JSON.parse(raw); }catch(e){} }
+  const data = {
+    routines: [
+      {
+        id: "r_morning", name: "朝のルーティン", icon: "🌅", time: "06:00", days: [1,2,3,4,5],
+        steps: [
+          {id:"s1", name:"背伸びをして水を一杯飲む", icon:"🧴", duration:120},
+          {id:"s2", name:"ベッドを整える", icon:"🛏️", duration:120},
+          {id:"s3", name:"天気を確認する", icon:"🌤️", duration:120}
+        ]
+      },
+      {
+        id: "r_night", name: "ナイトルーティン", icon: "🌙", time: "21:00", days: [1,2,3,4,5],
+        steps: [
+          {id:"s4", name:"机の上を片付ける", icon:"🗂️", duration:180},
+          {id:"s5", name:"明日の準備をする", icon:"🎒", duration:180},
+          {id:"s6", name:"軽くストレッチする", icon:"🧘", duration:120}
+        ]
+      }
+    ],
+    logs: [] // {date:"YYYY-MM-DD", routineId, actualSeconds, plannedSeconds, steps:[{name,icon,duration,actual}]}
+  };
+  saveData(data);
+  return data;
+}
+function saveData(d){ localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
+let DATA = loadData();
+
+function todayStr(d=new Date()){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function isoWeekday(d=new Date()){ const w=d.getDay(); return w===0?7:w; } // 1=Mon..7=Sun
+
+function computeStreak(routineId){
+  const logs = DATA.logs.filter(l=>l.routineId===routineId).map(l=>l.date);
+  const set = new Set(logs);
+  const routine = DATA.routines.find(r=>r.id===routineId);
+  let streak = 0;
+  let cur = new Date();
+  for(let i=0;i<400;i++){
+    const wd = isoWeekday(cur);
+    const scheduled = routine.days.includes(wd);
+    const ds = todayStr(cur);
+    if(scheduled){
+      if(set.has(ds)){ streak++; }
+      else if(ds===todayStr()){ /* today not done yet, skip without breaking */ }
+      else { break; }
+    }
+    cur.setDate(cur.getDate()-1);
+  }
+  return streak;
+}
+function totalDays(routineId){ return DATA.logs.filter(l=>l.routineId===routineId).length; }
+
+/* ============ view state ============ */
+let VIEW = { name:"list" };
+const root = document.getElementById("app");
+
+function nav(view){ VIEW = view; render(); }
+
+/* ============ render dispatch ============ */
+function render(){
+  if(VIEW.name==="list") renderList();
+  else if(VIEW.name==="timer") renderTimer();
+  else if(VIEW.name==="summary") renderSummary();
+  else if(VIEW.name==="edit") renderEdit();
+}
+
+/* ============ LIST VIEW ============ */
+function renderList(){
+  const weekCells = [];
+  const now = new Date();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - (isoWeekday(now)-1));
+  for(let i=0;i<7;i++){
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const ds = todayStr(d);
+    const isToday = ds===todayStr();
+    const done = DATA.logs.some(l=>l.date===ds);
+    let cls = "day";
+    if(isToday) cls += " today"; else if(done) cls += " done";
+    weekCells.push(`<div class="${cls}">${DAY_LABELS[i]}</div>`);
+  }
+
+  const cards = DATA.routines.map(r=>{
+    const streak = computeStreak(r.id);
+    const days = r.days.map(d=>DAY_LABELS[d-1]).join("・");
+    const doneToday = DATA.logs.some(l=>l.routineId===r.id && l.date===todayStr());
+    return `
+    <div class="well rcard">
+      <div class="icon">${r.icon}</div>
+      <div class="meta" data-edit="${r.id}">
+        <div class="name">${escapeHtml(r.name)}</div>
+        <div class="sub">${r.time}　${days}　全${r.steps.length}項目</div>
+      </div>
+      <div class="streak"><b>${streak}</b>継続日</div>
+      <button class="btn-sq play" data-start="${r.id}">${doneToday? "↻" : "▶"}</button>
+    </div>`;
+  }).join("");
+
+  root.innerHTML = `
+    <div class="topbar">
+      <div class="brand">ROUTINEFORGE</div>
+      <div class="tabs"><button class="active">ルーティン</button></div>
+    </div>
+    <div class="week">${weekCells.join("")}</div>
+    <div class="list">
+      ${cards || `<div class="empty-hint">右下の＋からルーティンを追加してください</div>`}
+    </div>
+    <button class="fab" id="fabAdd">＋</button>
+  `;
+  root.querySelectorAll("[data-start]").forEach(el=>{
+    el.addEventListener("click", ()=> startRoutine(el.dataset.start));
+  });
+  root.querySelectorAll("[data-edit]").forEach(el=>{
+    el.addEventListener("click", ()=> nav({name:"edit", routineId: el.dataset.edit}));
+  });
+  document.getElementById("fabAdd").addEventListener("click", ()=> nav({name:"edit", routineId:null}));
+}
+
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ============ TIMER VIEW ============ */
+let timerState = null; // {routine, idx, remaining, running, timerHandle, stepActuals:[]}
+
+function startRoutine(routineId){
+  const routine = DATA.routines.find(r=>r.id===routineId);
+  if(!routine || routine.steps.length===0) return;
+  timerState = { routine, idx:0, remaining: routine.steps[0].duration, running:true, stepActuals:[], startedAt: Date.now() };
+  nav({name:"timer"});
+  runTick();
+}
+
+function runTick(){
+  clearInterval(timerState.timerHandle);
+  timerState.timerHandle = setInterval(()=>{
+    if(!timerState || !timerState.running) return;
+    timerState.remaining--;
+    if(timerState.remaining <= 0){
+      completeCurrentStep(true);
+    } else {
+      updateTimerDynamic();
+    }
+  }, 1000);
+}
+
+function completeCurrentStep(auto){
+  const step = timerState.routine.steps[timerState.idx];
+  const planned = step.duration;
+  const actual = auto ? planned : (planned - Math.max(0,timerState.remaining));
+  timerState.stepActuals.push({name:step.name, icon:step.icon, duration:planned, actual});
+  if(timerState.idx < timerState.routine.steps.length-1){
+    timerState.idx++;
+    timerState.remaining = timerState.routine.steps[timerState.idx].duration;
+    renderTimer();
+  } else {
+    finishRoutine();
+  }
+}
+
+function skipStep(){
+  const step = timerState.routine.steps[timerState.idx];
+  timerState.stepActuals.push({name:step.name, icon:step.icon, duration:step.duration, actual:0, skipped:true});
+  if(timerState.idx < timerState.routine.steps.length-1){
+    timerState.idx++;
+    timerState.remaining = timerState.routine.steps[timerState.idx].duration;
+    renderTimer();
+  } else {
+    finishRoutine();
+  }
+}
+
+function finishRoutine(){
+  clearInterval(timerState.timerHandle);
+  const routine = timerState.routine;
+  const plannedTotal = routine.steps.reduce((a,s)=>a+s.duration,0);
+  const actualTotal = timerState.stepActuals.reduce((a,s)=>a+s.actual,0);
+  const log = { date: todayStr(), routineId: routine.id, plannedSeconds: plannedTotal,
+    actualSeconds: actualTotal, steps: timerState.stepActuals };
+  DATA.logs.push(log);
+  saveData(DATA);
+  const streak = computeStreak(routine.id);
+  showCelebration(streak, ()=> nav({name:"summary", log, routine}));
+}
+
+function showCelebration(streak, done){
+  const el = document.createElement("div");
+  el.className = "celebrate flash";
+  el.innerHTML = `<div class="txt">継続日数${streak}日目になりました!</div>`;
+  for(let i=0;i<10;i++){
+    const s = document.createElement("div");
+    s.className = "spark";
+    s.style.left = (10+Math.random()*80)+"%";
+    s.style.top = (20+Math.random()*60)+"%";
+    el.appendChild(s);
+  }
+  document.body.appendChild(el);
+  setTimeout(()=>{ el.remove(); done(); }, 1700);
+}
+
+function fmtMMSS(sec){
+  sec = Math.max(0,sec);
+  const m = String(Math.floor(sec/60)).padStart(2,"0");
+  const s = String(sec%60).padStart(2,"0");
+  return `${m}:${s}`;
+}
+
+function renderTimer(){
+  const { routine, idx, remaining } = timerState;
+  const step = routine.steps[idx];
+  const segCount = 20;
+  const ratio = 1 - (remaining / step.duration);
+  const onSegs = Math.round(ratio*segCount);
+  let segs = "";
+  for(let i=0;i<segCount;i++){
+    segs += `<i class="${i<onSegs ? (remaining<10?'warn':'on') : ''}"></i>`;
+  }
+
+  const previewRows = routine.steps.map((s,i)=>{
+    let cls = "row";
+    if(i<idx) cls+=" done"; else if(i===idx) cls+=" cur";
+    return `<div class="${cls}">${s.icon} ${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.floor(s.duration/60)}m</span></div>`;
+  }).join("");
+
+  const remainingStepsSec = routine.steps.slice(idx).reduce((a,s,i)=> a + (i===0?remaining:s.duration),0);
+  const eta = new Date(Date.now()+remainingStepsSec*1000);
+  const etaStr = `${String(eta.getHours()).padStart(2,"0")}:${String(eta.getMinutes()).padStart(2,"0")}`;
+
+  root.innerHTML = `
+    <div class="timer-wrap">
+      <div class="timer-head">
+        <button id="tClose">×</button>
+        <div class="mono" style="font-size:11px;color:var(--tx2)">${idx+1} / ${routine.steps.length}</div>
+        <div style="width:32px"></div>
+      </div>
+      <div class="step-name">${escapeHtml(step.name)}</div>
+      <div class="step-icon">${step.icon}</div>
+      <div class="countdown">${fmtMMSS(remaining)}</div>
+      <div class="seg-bar">${segs}</div>
+      <div class="timer-controls">
+        <button id="tPause">${timerState.running? "⏸" : "▶"}</button>
+        <button class="main" id="tDone">✓</button>
+        <button id="tSkip">⏭</button>
+      </div>
+      <div class="step-preview">${previewRows}</div>
+      <div class="finish-eta">全体終了予定　${etaStr}</div>
+    </div>
+  `;
+  document.getElementById("tClose").addEventListener("click", ()=>{
+    clearInterval(timerState.timerHandle); timerState=null; nav({name:"list"});
+  });
+  document.getElementById("tPause").addEventListener("click", ()=>{
+    timerState.running = !timerState.running; renderTimer();
+  });
+  document.getElementById("tDone").addEventListener("click", ()=> completeCurrentStep(false));
+  document.getElementById("tSkip").addEventListener("click", skipStep);
+}
+
+function updateTimerDynamic(){
+  const cd = root.querySelector(".countdown");
+  if(cd) cd.textContent = fmtMMSS(timerState.remaining);
+  const step = timerState.routine.steps[timerState.idx];
+  const segCount = 20;
+  const ratio = 1 - (timerState.remaining / step.duration);
+  const onSegs = Math.round(ratio*segCount);
+  root.querySelectorAll(".seg-bar i").forEach((el,i)=>{
+    el.className = i<onSegs ? (timerState.remaining<10?"warn":"on") : "";
+  });
+}
+
+/* ============ SUMMARY VIEW ============ */
+function renderSummary(){
+  const { log, routine } = VIEW;
+  const streak = computeStreak(routine.id);
+  const total = totalDays(routine.id);
+  const diff = log.plannedSeconds - log.actualSeconds;
+  const diffStr = (diff>=0? "-":"+") + fmtMMSS(Math.abs(diff));
+
+  const rows = log.steps.map(s=>`
+    <div class="srow">
+      <div class="ic">${s.icon}</div>
+      <div class="nm">${escapeHtml(s.name)}</div>
+      <div class="tm mono">${Math.floor(s.actual/60)}m ${s.actual%60}s</div>
+      <div class="ck">${s.skipped? "－" : "✓"}</div>
+    </div>`).join("");
+
+  root.innerHTML = `
+    <div class="topbar">
+      <div class="brand">${escapeHtml(routine.name)}</div>
+      <div style="width:20px"></div>
+    </div>
+    <div class="summary">
+      <div class="well stat-row">
+        <div class="stat-tile"><div class="lbl">継続日数</div><div class="val">${streak}</div></div>
+        <div class="stat-tile"><div class="lbl">合計日数</div><div class="val">${total}</div></div>
+      </div>
+      <div class="well">
+        <div class="total-row">
+          <div><div class="lbl" style="font-size:11px;color:var(--tx2)">合計</div>
+          <div class="val mono">${fmtMMSS(log.actualSeconds)}</div></div>
+          <div class="diff">${diffStr}</div>
+        </div>
+        <div class="slist">${rows}</div>
+      </div>
+      <button class="btn-wide" id="backList">一覧にもどる</button>
+    </div>
+  `;
+  document.getElementById("backList").addEventListener("click", ()=> nav({name:"list"}));
+}
+
+/* ============ EDIT VIEW ============ */
+let editDraft = null;
+
+function renderEdit(){
+  const routineId = VIEW.routineId;
+  const existing = routineId ? DATA.routines.find(r=>r.id===routineId) : null;
+  editDraft = existing ? JSON.parse(JSON.stringify(existing)) : {
+    id: "r_"+Date.now(), name:"", icon:"⭐", time:"07:00", days:[1,2,3,4,5], steps:[]
+  };
+  paintEdit();
+}
+
+function paintEdit(){
+  const d = editDraft;
+  const daysBtns = DAY_LABELS.map((lbl,i)=>{
+    const wd = i+1;
+    return `<button data-day="${wd}" class="${d.days.includes(wd)?'on':''}">${lbl}</button>`;
+  }).join("");
+
+  const stepsHtml = d.steps.map((s,i)=>`
+    <div class="step-row" data-idx="${i}">
+      <input type="text" class="emoji" value="${escapeHtml(s.icon)}" data-field="icon" data-idx="${i}" />
+      <input type="text" value="${escapeHtml(s.name)}" placeholder="ステップ名" data-field="name" data-idx="${i}" />
+      <input type="number" class="dur" min="10" step="10" value="${s.duration}" data-field="duration" data-idx="${i}" />
+      <button class="rm" data-rm="${i}">×</button>
+    </div>`).join("");
+
+  root.innerHTML = `
+    <div class="topbar">
+      <button id="eCancel" style="background:none;border:none;color:var(--tx2);font-size:13px;">キャンセル</button>
+      <div class="brand">${editDraft.id.startsWith('r_') && !DATA.routines.find(r=>r.id===editDraft.id) ? '新規ルーティン' : '編集'}</div>
+      <div style="width:50px"></div>
+    </div>
+    <div class="form">
+      <div class="field">
+        <label>ルーティン名</label>
+        <input type="text" id="fName" value="${escapeHtml(d.name)}" placeholder="例: 朝のルーティン" />
+      </div>
+      <div style="display:flex; gap:10px;">
+        <div class="field" style="flex:0 0 70px;">
+          <label>アイコン</label>
+          <input type="text" id="fIcon" value="${escapeHtml(d.icon)}" />
+        </div>
+        <div class="field" style="flex:1;">
+          <label>通知時刻</label>
+          <input type="time" id="fTime" value="${d.time}" />
+        </div>
+      </div>
+      <div class="field">
+        <label>実行する曜日</label>
+        <div class="days-pick">${daysBtns}</div>
+      </div>
+      <div class="field">
+        <label>ステップ</label>
+        <div class="steps-edit" id="stepsEdit">${stepsHtml}</div>
+        <button class="add-step-btn" id="addStep">＋ ステップを追加</button>
+      </div>
+      <button class="btn-wide" id="saveRoutine">保存する</button>
+      ${DATA.routines.find(r=>r.id===d.id) ? `<button class="danger-btn" id="delRoutine">このルーティンを削除</button>` : ""}
+    </div>
+  `;
+
+  document.getElementById("eCancel").addEventListener("click", ()=> nav({name:"list"}));
+  document.getElementById("fName").addEventListener("input", e=> d.name = e.target.value);
+  document.getElementById("fIcon").addEventListener("input", e=> d.icon = e.target.value || "⭐");
+  document.getElementById("fTime").addEventListener("input", e=> d.time = e.target.value);
+  root.querySelectorAll("[data-day]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const wd = Number(btn.dataset.day);
+      if(d.days.includes(wd)) d.days = d.days.filter(x=>x!==wd);
+      else d.days.push(wd);
+      paintEdit();
+    });
+  });
+  root.querySelectorAll("[data-field]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const i = Number(inp.dataset.idx); const f = inp.dataset.field;
+      d.steps[i][f] = f==="duration" ? Math.max(10, Number(inp.value)||10) : inp.value;
+    });
+  });
+  root.querySelectorAll("[data-rm]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      d.steps.splice(Number(btn.dataset.rm),1); paintEdit();
+    });
+  });
+  document.getElementById("addStep").addEventListener("click", ()=>{
+    d.steps.push({id:"s_"+Date.now(), name:"", icon:"🔹", duration:120});
+    paintEdit();
+  });
+  document.getElementById("saveRoutine").addEventListener("click", ()=>{
+    if(!d.name.trim()){ alert("ルーティン名を入力してください"); return; }
+    if(d.steps.length===0){ alert("ステップを1つ以上追加してください"); return; }
+    const idx = DATA.routines.findIndex(r=>r.id===d.id);
+    if(idx>=0) DATA.routines[idx] = d; else DATA.routines.push(d);
+    saveData(DATA);
+    nav({name:"list"});
+  });
+  const delBtn = document.getElementById("delRoutine");
+  if(delBtn) delBtn.addEventListener("click", ()=>{
+    if(!confirm("このルーティンを削除しますか？")) return;
+    DATA.routines = DATA.routines.filter(r=>r.id!==d.id);
+    DATA.logs = DATA.logs.filter(l=>l.routineId!==d.id);
+    saveData(DATA);
+    nav({name:"list"});
+  });
+}
+
+/* ============ boot ============ */
+render();
+
+if("serviceWorker" in navigator){
+  window.addEventListener("load", ()=>{
+    navigator.serviceWorker.register("sw.js").catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
