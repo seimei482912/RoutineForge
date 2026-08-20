@@ -52,8 +52,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 /* ---- routine list ---- */
 .list{padding:12px 16px 100px; display:flex; flex-direction:column; gap:10px;}
 .rcard{display:flex; align-items:center; gap:12px; padding:12px;}
-.rcard .icon{width:44px; height:44px; background:var(--panel); border:2px solid var(--line2);
-  display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0;}
 .rcard .meta{flex:1; min-width:0;}
 .rcard .meta .name{font-family:var(--f-dis); font-size:15px; font-weight:700;}
 .rcard .meta .sub{font-size:11px; color:var(--tx2); margin-top:4px; font-family:var(--f-mono);}
@@ -104,7 +102,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .ring-tick.over{fill:var(--rd); stroke:#7a2b2b;}
 .ring-center{position:absolute; inset:64px; background:var(--well); border:2px solid var(--line2);
   display:flex; align-items:center; justify-content:center; flex-direction:column;}
-.step-icon-glyph{font-size:34px; line-height:1;}
 .countdown{font-family:var(--f-mono); font-size:32px; text-align:center; font-variant-numeric:tabular-nums;
   letter-spacing:.04em; margin-top:6px;}
 .countdown.over{color:var(--rd); animation:overBlink 1s steps(2) infinite;}
@@ -153,8 +150,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
 .total-row .diff{font-family:var(--f-mono); font-size:12px; color:var(--tx3); border:1px solid var(--line2); padding:2px 6px;}
 .slist .srow{display:flex; align-items:center; gap:10px; padding:8px; border-top:1px solid var(--line); border-left:3px solid transparent;}
 .slist .srow.done{background:rgba(255,210,63,.14); border-left-color:var(--ye);}
-.slist .srow .ic{width:30px; height:30px; background:var(--panel); border:1px solid var(--line2);
-  display:flex; align-items:center; justify-content:center; font-size:15px;}
 .slist .srow .nm{flex:1; font-size:13px;}
 .slist .srow .tm{font-family:var(--f-mono); font-size:11px; color:var(--tx2);}
 .slist .srow .ck{color:var(--tx2); font-weight:700;}
@@ -170,7 +165,6 @@ button{font-family:inherit; color:inherit; cursor:pointer;}
   width:100%; background:var(--well); border:2px solid var(--line2); color:var(--tx); padding:10px; font-size:14px; font-family:inherit;}
 .steps-edit .step-row{display:flex; gap:8px; align-items:center; padding:8px; background:var(--well); border:1px solid var(--line); margin-bottom:8px;}
 .steps-edit .step-row input[type=text]{flex:2; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:8px; font-family:inherit;}
-.steps-edit .step-row input.emoji{flex:0 0 46px; text-align:center;}
 .steps-edit .step-row input.dur{flex:0 0 60px; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:8px; font-family:var(--f-mono);}
 .steps-edit .step-row button.rm{flex:0 0 32px; height:32px; background:var(--panel); border:1px solid var(--rd); color:var(--rd);}
 .add-step-btn{border:2px dashed var(--line2); background:none; color:var(--tx2); padding:10px; font-size:12px;}
@@ -194,23 +188,23 @@ function loadData(){
   const data = {
     routines: [
       {
-        id: "r_morning", name: "朝のルーティン", icon: "🌅",
+        id: "r_morning", name: "朝のルーティン",
         steps: [
-          {id:"s1", name:"背伸びをして水を一杯飲む", icon:"🧴", duration:120},
-          {id:"s2", name:"ベッドを整える", icon:"🛏️", duration:120},
-          {id:"s3", name:"天気を確認する", icon:"🌤️", duration:120}
+          {id:"s1", name:"背伸びをして水を一杯飲む", duration:120},
+          {id:"s2", name:"ベッドを整える", duration:120},
+          {id:"s3", name:"天気を確認する", duration:120}
         ]
       },
       {
-        id: "r_night", name: "ナイトルーティン", icon: "🌙",
+        id: "r_night", name: "ナイトルーティン",
         steps: [
-          {id:"s4", name:"机の上を片付ける", icon:"🗂️", duration:180},
-          {id:"s5", name:"明日の準備をする", icon:"🎒", duration:180},
-          {id:"s6", name:"軽くストレッチする", icon:"🧘", duration:120}
+          {id:"s4", name:"机の上を片付ける", duration:180},
+          {id:"s5", name:"明日の準備をする", duration:180},
+          {id:"s6", name:"軽くストレッチする", duration:120}
         ]
       }
     ],
-    logs: [] // {date:"YYYY-MM-DD", routineId, actualSeconds, plannedSeconds, steps:[{name,icon,duration,actual}]}
+    logs: [] // {date:"YYYY-MM-DD", routineId, actualSeconds, plannedSeconds, steps:[{name,duration,actual}]}
   };
   saveData(data);
   return data;
@@ -386,7 +380,6 @@ function renderList(){
     const doneToday = DATA.logs.some(l=>l.routineId===r.id && l.date===todayStr());
     return `
     <div class="well rcard">
-      <div class="icon">${r.icon}</div>
       <div class="meta" data-edit="${r.id}">
         <div class="name">${escapeHtml(r.name)}</div>
         <div class="sub">全${r.steps.length}項目</div>
@@ -453,7 +446,7 @@ function adjustRemaining(deltaSec){
 
 function completeCurrentStep(){
   const step = timerState.steps[timerState.idx];
-  timerState.stepActuals.push({name:step.name, icon:step.icon, duration:step.duration, actual:timerState.elapsed});
+  timerState.stepActuals.push({name:step.name, duration:step.duration, actual:timerState.elapsed});
   advanceAfterStep();
 }
 
@@ -493,7 +486,7 @@ function openSkipModal(){
   document.getElementById("mSkipDrop").addEventListener("click", ()=>{
     modal.remove();
     const step = timerState.steps.splice(timerState.idx,1)[0];
-    timerState.stepActuals.push({name:step.name, icon:step.icon, duration:step.duration, actual:0, skipped:true});
+    timerState.stepActuals.push({name:step.name, duration:step.duration, actual:0, skipped:true});
     if(timerState.idx >= timerState.steps.length){ finishRoutine(); return; }
     timerState.remaining = timerState.steps[timerState.idx].duration;
     timerState.elapsed = 0;
@@ -572,7 +565,7 @@ function renderTimer(){
   const previewRows = steps.map((s,i)=>{
     let cls = "row";
     if(i<idx) cls+=" done"; else if(i===idx) cls+=" cur";
-    return `<div class="${cls}">${s.icon} ${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.floor(s.duration/60)}m</span></div>`;
+    return `<div class="${cls}">${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.floor(s.duration/60)}m</span></div>`;
   }).join("");
 
   const remainingStepsSec = steps.slice(idx).reduce((a,s,i)=> a + (i===0?Math.max(0,remaining):s.duration),0);
@@ -589,7 +582,7 @@ function renderTimer(){
       <div class="step-name">${escapeHtml(step.name)}</div>
       <div class="ring-wrap">
         ${ringSVG(arr)}
-        <div class="ring-center"><span class="step-icon-glyph">${step.icon}</span></div>
+        <div class="ring-center"></div>
       </div>
       <div class="countdown${overtime?' over':''}">${fmtMMSS(remaining)}</div>
       ${overtime? `<div class="over-label">予定時間オーバー</div>` : ""}
@@ -652,7 +645,6 @@ function renderSummary(){
 
   const rows = log.steps.map(s=>`
     <div class="srow${s.skipped? "" : " done"}">
-      <div class="ic">${s.icon}</div>
       <div class="nm">${escapeHtml(s.name)}</div>
       <div class="tm mono">${Math.floor(s.actual/60)}m ${s.actual%60}s</div>
       <div class="ck">${s.skipped? "－" : "✓"}</div>
@@ -689,7 +681,7 @@ function renderEdit(){
   const routineId = VIEW.routineId;
   const existing = routineId ? DATA.routines.find(r=>r.id===routineId) : null;
   editDraft = existing ? JSON.parse(JSON.stringify(existing)) : {
-    id: "r_"+Date.now(), name:"", icon:"⭐", steps:[]
+    id: "r_"+Date.now(), name:"", steps:[]
   };
   paintEdit();
 }
@@ -698,7 +690,6 @@ function paintEdit(){
   const d = editDraft;
   const stepsHtml = d.steps.map((s,i)=>`
     <div class="step-row" data-idx="${i}">
-      <input type="text" class="emoji" value="${escapeHtml(s.icon)}" data-field="icon" data-idx="${i}" />
       <input type="text" value="${escapeHtml(s.name)}" placeholder="ステップ名" data-field="name" data-idx="${i}" />
       <input type="number" class="dur" min="10" step="10" value="${s.duration}" data-field="duration" data-idx="${i}" />
       <button class="rm" data-rm="${i}">×</button>
@@ -715,10 +706,6 @@ function paintEdit(){
         <label>ルーティン名</label>
         <input type="text" id="fName" value="${escapeHtml(d.name)}" placeholder="例: 朝のルーティン" />
       </div>
-      <div class="field" style="max-width:90px;">
-        <label>アイコン</label>
-        <input type="text" id="fIcon" value="${escapeHtml(d.icon)}" />
-      </div>
       <div class="field">
         <label>ステップ</label>
         <div class="steps-edit" id="stepsEdit">${stepsHtml}</div>
@@ -731,7 +718,6 @@ function paintEdit(){
 
   document.getElementById("eCancel").addEventListener("click", ()=> nav({name:"list"}));
   document.getElementById("fName").addEventListener("input", e=> d.name = e.target.value);
-  document.getElementById("fIcon").addEventListener("input", e=> d.icon = e.target.value || "⭐");
   root.querySelectorAll("[data-field]").forEach(inp=>{
     inp.addEventListener("input", ()=>{
       const i = Number(inp.dataset.idx); const f = inp.dataset.field;
@@ -744,7 +730,7 @@ function paintEdit(){
     });
   });
   document.getElementById("addStep").addEventListener("click", ()=>{
-    d.steps.push({id:"s_"+Date.now(), name:"", icon:"🔹", duration:120});
+    d.steps.push({id:"s_"+Date.now(), name:"", duration:120});
     paintEdit();
   });
   document.getElementById("saveRoutine").addEventListener("click", ()=>{
