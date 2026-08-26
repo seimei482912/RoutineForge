@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<title>RoutineForge</title>
+<style>
+:root{
+  --ink:#000000; --panel:#161C24; --well:#1B222C; --line:#28323E; --line2:#394656;
+  --tx:#E8EFF6; --tx2:#93A2B3; --tx3:#61707F;
+  --cy:#28b6ff; --cy-d:#0d5f8a;
+  --ye:#FFD23F; --rd:#FF6B6B; --or:#E8873C;
+  --f-ui:"Yu Gothic UI","Meiryo",sans-serif;
+  --f-dis:"BIZ UDPGothic","BIZ UDGothic","Yu Gothic UI",sans-serif;
+  --f-mono:"MS Gothic","Consolas",monospace;
+}
+*{box-sizing:border-box; border-radius:0 !important;}
+html,body{margin:0;padding:0;height:100%;background:var(--ink);color:var(--tx);font-family:var(--f-ui);
+  -webkit-font-smoothing:antialiased; font-feature-settings:"palt" 1; overflow:hidden; user-select:none;}
+body{
+  background-image:repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 1px, transparent 4px),
+                    repeating-linear-gradient(90deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 1px, transparent 4px);
+}
+button{font-family:inherit; color:inherit; cursor:pointer;}
+input{font-family:inherit;}
+.mono{font-family:var(--f-mono); font-variant-numeric:tabular-nums;}
+.pxi{shape-rendering:crispEdges; fill:currentColor; display:block;}
+
+#layout{display:flex; height:100vh;}
+
+/* ============ 左ペイン ============ */
+#side{width:320px; flex-shrink:0; border-right:2px solid var(--line2); display:flex; flex-direction:column; background:rgba(255,255,255,.01);}
+.side-head{padding:14px 16px; border-bottom:2px solid var(--line2); background:#000;
+  display:flex; align-items:center; justify-content:space-between;}
+.brand{font-family:var(--f-dis); font-weight:700; font-size:14px; letter-spacing:.14em; color:var(--cy);}
+.side-date{font-family:var(--f-mono); font-size:11px; color:var(--tx3);}
+#routineList{padding:12px; display:flex; flex-direction:column; gap:8px; overflow-y:auto;}
+.rcard{background:var(--well); border:2px solid var(--line); border-left:3px solid transparent;
+  padding:10px 12px; display:flex; align-items:center; gap:10px; cursor:pointer;}
+.rcard:hover{border-color:var(--line2);}
+.rcard.sel{border-color:var(--cy); border-left-color:var(--cy);}
+.rcard.done-today{background:rgba(255,210,63,.14); border-left-color:var(--ye);}
+.rcard .meta{flex:1; min-width:0;}
+.rcard .name{font-family:var(--f-dis); font-size:14px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.rcard .sub{font-size:10px; color:var(--tx2); margin-top:3px; font-family:var(--f-mono);}
+.rcard .streak{font-family:var(--f-mono); font-size:10px; color:var(--ye); text-align:right;}
+.rcard .streak b{font-size:15px; display:block;}
+.add-routine{border:2px dashed var(--line2); background:none; color:var(--tx2); padding:10px; font-size:12px; margin:0 12px;}
+
+.side-stats{margin-top:auto; border-top:2px solid var(--line2); padding:12px;}
+.side-stats .row3{display:flex; gap:6px; margin-bottom:10px;}
+.stat-tile{flex:1; text-align:center; background:var(--well); border:1px solid var(--line); padding:8px 0;}
+.stat-tile .lbl{font-size:9px; color:var(--tx2);}
+.stat-tile .val{font-family:var(--f-mono); font-size:20px; font-weight:700; margin-top:2px; color:var(--cy);}
+.month-title{font-family:var(--f-dis); font-size:11px; font-weight:700; margin-bottom:6px; text-align:center; color:var(--tx2);}
+.month-head{display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:3px;}
+.month-head div{text-align:center; font-size:9px; color:var(--tx3); font-family:var(--f-mono);}
+.month-grid{display:grid; grid-template-columns:repeat(7,1fr); gap:3px;}
+.mday{aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:9px; font-family:var(--f-mono);
+  border:1px dashed var(--line2); color:var(--tx3);}
+.mday.empty{border:none;}
+.mday.done{background:var(--cy); border:1px solid var(--cy-d); color:var(--ink); border-style:solid;
+  box-shadow:inset -2px -2px 0 rgba(0,0,0,.25);}
+.mday.today{background:var(--ye); border:1px solid #8a6a10; color:var(--ink); border-style:solid;
+  box-shadow:inset -2px -2px 0 rgba(0,0,0,.25);}
+
+/* ============ 右ペイン ============ */
+#mainPane{flex:1; display:flex; flex-direction:column; min-width:0; overflow-y:auto;}
+
+/* --- idle --- */
+.idle{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:40px;}
+.idle .big{font-family:var(--f-dis); font-size:22px; font-weight:700; color:var(--tx2);}
+.idle .hint{font-size:12px; color:var(--tx3); line-height:2;}
+.idle .hint b{color:var(--tx2); font-family:var(--f-mono); border:1px solid var(--line2); padding:1px 7px; margin:0 2px;}
+
+/* --- timer --- */
+.trun{flex:1; display:flex; padding:26px 30px; gap:34px; align-items:stretch;}
+.trun-left{flex:0 0 340px; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+.step-name{font-family:var(--f-dis); font-size:24px; font-weight:700; text-align:center; margin-bottom:16px; min-height:32px;}
+.ring-wrap{width:300px; height:300px; position:relative;}
+.ring-wrap svg.ring{width:100%; height:100%; shape-rendering:crispEdges; overflow:visible; display:block;}
+.ring-tick{fill:var(--well); stroke:var(--line); stroke-width:1;}
+.ring-tick.on{fill:var(--cy); stroke:var(--cy-d);}
+.ring-tick.warn{fill:var(--or); stroke:#8a4d1c;}
+.ring-tick.over{fill:var(--rd); stroke:#7a2b2b; animation:tickBlink 1s steps(2) infinite;}
+@keyframes tickBlink{50%{fill-opacity:.35;}}
+.ring-inner{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;}
+.ring-inner .countdown{font-family:var(--f-mono); font-size:48px; font-variant-numeric:tabular-nums; letter-spacing:.04em;}
+.ring-inner .countdown.over{color:var(--rd); animation:overBlink 1s steps(2) infinite;}
+@keyframes overBlink{50%{opacity:.35;}}
+.ring-inner .step-count{font-family:var(--f-mono); font-size:12px; color:var(--tx3);}
+.ring-inner .over-label{font-size:12px; color:var(--rd); letter-spacing:.05em;}
+.ring-inner .pause-label{font-size:12px; color:var(--tx2); letter-spacing:.05em;}
+.paused svg.ring{opacity:.45;}
+.timer-controls{display:flex; gap:14px; margin-top:22px;}
+.timer-controls button{width:52px; height:52px; border:2px solid var(--line2); background:var(--panel); color:var(--tx);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow: inset 2px 2px 0 rgba(255,255,255,.06), inset -2px -2px 0 rgba(0,0,0,.4);}
+.timer-controls button .pxi{width:18px; height:18px;}
+.timer-controls button.main{background:var(--cy-d); border-color:var(--cy); width:62px; height:62px;}
+.timer-controls button.main .pxi{width:22px; height:22px;}
+.timer-controls button:active{box-shadow: inset -2px -2px 0 rgba(255,255,255,.06), inset 2px 2px 0 rgba(0,0,0,.4);}
+.time-adjust{display:flex; gap:10px; margin-top:14px;}
+.time-adjust button{border:2px solid var(--line2); background:var(--panel); color:var(--tx2); padding:5px 13px; font-size:12px; font-family:var(--f-mono);}
+
+.trun-right{flex:1; min-width:0; display:flex; flex-direction:column; justify-content:center;}
+.trun-right .routine-title{font-family:var(--f-mono); font-size:12px; color:var(--tx3); margin-bottom:10px;}
+.step-preview{border-top:2px solid var(--line);}
+.step-preview .row{display:flex; align-items:center; gap:10px; padding:10px 10px; font-size:14px; color:var(--tx2);
+  border-left:3px solid transparent; border-bottom:1px solid var(--line);}
+.step-preview .row .mk{font-family:var(--f-mono); width:14px; flex-shrink:0; color:var(--ye);}
+.step-preview .row.cur{color:var(--ye);}
+.step-preview .row.done{background:rgba(255,210,63,.14); border-left-color:var(--ye); color:var(--tx2);
+  text-decoration:line-through; text-decoration-color:var(--tx3);}
+.finish-eta{font-family:var(--f-mono); font-size:12px; color:var(--tx3); margin-top:14px;}
+.kbd-hint{margin-top:22px; font-size:11px; color:var(--tx3); line-height:2;}
+.kbd-hint b{color:var(--tx2); font-family:var(--f-mono); border:1px solid var(--line2); padding:0 6px; margin-right:2px;}
+
+/* --- summary --- */
+.summary{flex:1; padding:34px 40px; max-width:640px;}
+.summary h2{font-family:var(--f-dis); font-size:20px; margin:0 0 4px;}
+.summary .start-at{font-family:var(--f-mono); font-size:11px; color:var(--tx3); margin-bottom:18px;}
+.sum-tiles{display:flex; gap:10px; margin-bottom:14px;}
+.sum-tiles .stat-tile{padding:14px 0;}
+.sum-tiles .stat-tile .val{font-size:28px;}
+.total-box{background:var(--well); border:2px solid var(--line); padding:14px; margin-bottom:14px;}
+.total-row{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:8px;}
+.total-row .val{font-family:var(--f-mono); font-size:26px;}
+.total-row .diff{font-family:var(--f-mono); font-size:12px; color:var(--tx3); border:1px solid var(--line2); padding:2px 6px;}
+.total-row .diff.overrun{color:var(--rd); border-color:var(--rd);}
+.srow{display:flex; align-items:center; gap:10px; padding:8px; border-top:1px solid var(--line); border-left:3px solid transparent; font-size:13px;}
+.srow.done{background:rgba(255,210,63,.14); border-left-color:var(--ye);}
+.srow .nm{flex:1;}
+.srow .tm{font-family:var(--f-mono); font-size:11px; color:var(--tx2);}
+.srow .tm.overrun{color:var(--rd);}
+.srow .ck{color:var(--tx2); font-weight:700; font-family:var(--f-mono);}
+.srow.done .ck{color:var(--ye);}
+
+.btn-wide{padding:12px 26px; text-align:center; background:var(--cy); color:var(--ink); border:2px solid var(--cy-d);
+  font-weight:700; font-size:13px; box-shadow: inset 2px 2px 0 rgba(255,255,255,.3), inset -2px -2px 0 rgba(0,0,0,.3);}
+.btn-wide:active{box-shadow: inset -2px -2px 0 rgba(255,255,255,.3), inset 2px 2px 0 rgba(0,0,0,.3);}
+.btn-wide.danger{background:var(--panel); color:var(--rd); border-color:var(--rd);}
+.btn-wide.ghost{background:none; color:var(--tx2); border-color:var(--line2); box-shadow:none;}
+
+/* --- edit --- */
+.editv{flex:1; padding:34px 40px; max-width:640px;}
+.editv h2{font-family:var(--f-dis); font-size:20px; margin:0 0 18px;}
+.field{margin-bottom:16px;}
+.field label{display:block; font-size:11px; color:var(--tx2); margin-bottom:6px;}
+.field input[type=text],.field input[type=number]{
+  width:100%; background:var(--well); border:2px solid var(--line2); color:var(--tx); padding:9px; font-size:14px;}
+.step-row{display:flex; gap:6px; align-items:center; padding:7px; background:var(--well); border:1px solid var(--line); margin-bottom:7px;}
+.step-row input[type=text]{flex:2; min-width:0; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:7px;}
+.step-row input.dur{flex:0 0 70px; background:var(--panel); border:1px solid var(--line2); color:var(--tx); padding:7px; font-family:var(--f-mono);}
+.step-row .ord{display:flex; flex-direction:column; gap:2px; flex-shrink:0;}
+.step-row .ord button{width:24px; height:14px; background:var(--panel); border:1px solid var(--line2); color:var(--tx3);
+  display:flex; align-items:center; justify-content:center; padding:0;}
+.step-row .ord button .pxi{width:9px; height:9px;}
+.step-row .ord button:disabled{opacity:.25;}
+.step-row button.rm{flex:0 0 28px; height:28px; background:var(--panel); border:1px solid var(--rd); color:var(--rd);
+  display:flex; align-items:center; justify-content:center;}
+.step-row button.rm .pxi{width:11px; height:11px;}
+.add-step-btn{border:2px dashed var(--line2); background:none; color:var(--tx2); padding:9px; font-size:12px; width:100%;}
+.edit-actions{display:flex; gap:10px; margin-top:20px;}
+
+/* --- celebration --- */
+.celebrate{position:fixed; inset:0; background:var(--ink); z-index:50; display:flex; align-items:center;
+  justify-content:center; flex-direction:column;}
+.celebrate.flash{animation:flash .5s steps(3);}
+@keyframes flash{0%{background:var(--ye);} 100%{background:var(--ink);}}
+.celebrate .txt{font-family:var(--f-dis); font-size:32px; font-weight:700; color:var(--ye);
+  overflow:hidden; white-space:nowrap; width:0; animation:wipe 1s steps(7) forwards .1s;}
+@keyframes wipe{to{width:100%;}}
+.spark{position:absolute; width:7px; height:7px; background:var(--ye); animation:sparkStep .9s steps(3) forwards;}
+@keyframes sparkStep{to{transform:translateY(-28px); opacity:0;}}
+
+@media (prefers-reduced-motion: reduce){
+  .ring-tick.over,.ring-inner .countdown.over,.celebrate.flash,.spark{animation:none;}
+  .celebrate .txt{animation:none; width:100%;}
+}
+</style>
+</head>
+<body>
+<div id="layout">
+  <div id="side">
+    <div class="side-head">
+      <div class="brand">ROUTINEFORGE</div>
+      <div class="side-date mono" id="sideDate"></div>
+    </div>
+    <div id="routineList"></div>
+    <button class="add-routine" id="addRoutine">＋ ルーティンを追加</button>
+    <div class="side-stats" id="sideStats"></div>
+  </div>
+  <div id="mainPane"></div>
+</div>
+
+<script>
+"use strict";
+
+/* ============ pixel icons ============ */
+function px(shapes){
+  const rects = shapes.map(s=>`<rect x="${s[0]}" y="${s[1]}" width="${s[2]}" height="${s[3]}"></rect>`).join("");
+  return `<svg viewBox="0 0 16 16" class="pxi" aria-hidden="true">${rects}</svg>`;
+}
+const ICON = {
+  play:  [[5,3,2,10],[7,4,2,8],[9,5,2,6],[11,6,2,4]],
+  pause: [[4,3,3,10],[9,3,3,10]],
+  check: [[2,8,2,2],[3,9,2,2],[4,10,2,2],[5,9,2,2],[6,8,2,2],[7,7,2,2],[8,6,2,2],[9,5,2,2],[10,4,2,2],[11,3,2,2]],
+  skip:  [[3,3,2,10],[5,4,2,8],[7,5,2,6],[9,6,2,4],[12,3,2,10]],
+  close: [[3,3,2,2],[5,5,2,2],[7,7,2,2],[9,9,2,2],[11,11,2,2],[11,3,2,2],[9,5,2,2],[5,9,2,2],[3,11,2,2]],
+  up:    [[7,4,2,2],[5,6,6,2],[3,8,10,2]],
+  down:  [[3,6,10,2],[5,8,6,2],[7,10,2,2]]
+};
+
+/* ============ sound ============ */
+let audioCtx = null;
+function ensureAudio(){
+  try{
+    audioCtx = audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state === "suspended") audioCtx.resume();
+  }catch(e){}
+}
+function beep(freq, dur, when){
+  if(!audioCtx) return;
+  try{
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = "square"; o.frequency.value = freq;
+    g.gain.value = 0.04;
+    o.connect(g); g.connect(audioCtx.destination);
+    const t = audioCtx.currentTime + (when||0);
+    o.start(t); o.stop(t + dur);
+  }catch(e){}
+}
+function beepTimeUp(){ ensureAudio(); beep(880,0.09,0); beep(1320,0.12,0.15); }
+function beepAdvance(){ ensureAudio(); beep(660,0.06,0); }
+
+/* ============ storage ============ */
+const STORE_KEY = "routineforge_data_v1";
+
+function loadData(){
+  const raw = localStorage.getItem(STORE_KEY);
+  if(raw){ try{ return JSON.parse(raw); }catch(e){} }
+  const data = {
+    routines: [
+      {
+        id: "r_morning", name: "朝のルーティン",
+        steps: [
+          {id:"s1", name:"背伸びをして水を一杯飲む", duration:120},
+          {id:"s2", name:"ベッドを整える", duration:120},
+          {id:"s3", name:"天気を確認する", duration:120}
+        ]
+      },
+      {
+        id: "r_night", name: "ナイトルーティン",
+        steps: [
+          {id:"s4", name:"机の上を片付ける", duration:180},
+          {id:"s5", name:"明日の準備をする", duration:180},
+          {id:"s6", name:"軽くストレッチする", duration:120}
+        ]
+      }
+    ],
+    logs: []
+  };
+  saveData(data);
+  return data;
+}
+function saveData(d){ localStorage.setItem(STORE_KEY, JSON.stringify(d)); }
+let DATA = loadData();
+
+function todayStr(d=new Date()){
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,"0"), day=String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function computeStreak(routineId){
+  const set = new Set(DATA.logs.filter(l=>l.routineId===routineId).map(l=>l.date));
+  let streak = 0, cur = new Date();
+  for(let i=0;i<400;i++){
+    const ds = todayStr(cur);
+    if(set.has(ds)) streak++;
+    else if(ds!==todayStr()) break;
+    cur.setDate(cur.getDate()-1);
+  }
+  return streak;
+}
+function totalDays(routineId){ return DATA.logs.filter(l=>l.routineId===routineId).length; }
+function maxStreakOfDates(dateSet){
+  if(dateSet.size===0) return 0;
+  const sorted = Array.from(dateSet).sort();
+  let d = new Date(sorted[0]);
+  const end = new Date();
+  let max=0, cur=0;
+  while(d<=end){
+    if(dateSet.has(todayStr(d))){ cur++; max=Math.max(max,cur); } else { cur=0; }
+    d.setDate(d.getDate()+1);
+  }
+  return max;
+}
+function allCurrentStreak(){
+  const dates = new Set(DATA.logs.map(l=>l.date));
+  let streak=0, d=new Date();
+  for(let i=0;i<400;i++){
+    const ds = todayStr(d);
+    if(dates.has(ds)) streak++;
+    else if(ds!==todayStr()) break;
+    d.setDate(d.getDate()-1);
+  }
+  return streak;
+}
+function escapeHtml(s){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmtMMSS(sec){
+  const neg = sec < 0;
+  sec = Math.abs(sec);
+  const m = String(Math.floor(sec/60)).padStart(2,"0");
+  const s = String(sec%60).padStart(2,"0");
+  return (neg?"-":"") + `${m}:${s}`;
+}
+function fmtTotal(r){
+  const sec = r.steps.reduce((a,s)=>a+s.duration,0);
+  return `約${Math.round(sec/60)}分`;
+}
+
+/* ============ 左ペイン ============ */
+let SELECTED = null;
+
+function renderSide(){
+  const now = new Date();
+  document.getElementById("sideDate").textContent =
+    `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+
+  const list = document.getElementById("routineList");
+  list.innerHTML = DATA.routines.map(r=>{
+    const doneToday = DATA.logs.some(l=>l.routineId===r.id && l.date===todayStr());
+    const streak = computeStreak(r.id);
+    const selCls = SELECTED===r.id ? " sel" : "";
+    return `
+    <div class="rcard${doneToday?" done-today":""}${selCls}" data-id="${r.id}">
+      <div class="meta">
+        <div class="name">${escapeHtml(r.name)}</div>
+        <div class="sub">全${r.steps.length}項目　${fmtTotal(r)}${doneToday?"　済":""}</div>
+      </div>
+      <div class="streak"><b>${streak}</b>継続日</div>
+    </div>`;
+  }).join("");
+  list.querySelectorAll(".rcard").forEach(el=>{
+    el.addEventListener("click", ()=>{ SELECTED = el.dataset.id; renderSide(); showIdle(); });
+    el.addEventListener("dblclick", ()=> startRoutine(el.dataset.id));
+  });
+
+  const stats = document.getElementById("sideStats");
+  const dates = new Set(DATA.logs.map(l=>l.date));
+  stats.innerHTML = `
+    <div class="row3">
+      <div class="stat-tile"><div class="lbl">継続日数</div><div class="val">${allCurrentStreak()}</div></div>
+      <div class="stat-tile"><div class="lbl">最大継続</div><div class="val">${maxStreakOfDates(dates)}</div></div>
+      <div class="stat-tile"><div class="lbl">合計</div><div class="val">${DATA.logs.length}</div></div>
+    </div>
+    <div class="month-title">${now.getFullYear()}年${now.getMonth()+1}月</div>
+    ${monthGridHTML()}
+  `;
+}
+
+function monthGridHTML(){
+  const now = new Date();
+  const year = now.getFullYear(), month = now.getMonth();
+  const startWeekday = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const dates = new Set(DATA.logs.map(l=>l.date));
+  let cells = "";
+  for(let i=0;i<startWeekday;i++) cells += `<div class="mday empty"></div>`;
+  for(let day=1; day<=daysInMonth; day++){
+    const ds = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+    let cls = "mday";
+    if(ds===todayStr()) cls+=" today"; else if(dates.has(ds)) cls+=" done";
+    cells += `<div class="${cls}">${day}</div>`;
+  }
+  const heads = ["日","月","火","水","木","金","土"].map(d=>`<div>${d}</div>`).join("");
+  return `<div class="month-head">${heads}</div><div class="month-grid">${cells}</div>`;
+}
+
+/* ============ 右ペイン ============ */
+const mainPane = document.getElementById("mainPane");
+let MODE = "idle"; // idle | timer | summary | edit
+
+function showIdle(){
+  MODE = "idle";
+  const sel = DATA.routines.find(r=>r.id===SELECTED);
+  mainPane.innerHTML = `
+    <div class="idle">
+      <div class="big">${sel? escapeHtml(sel.name) : "ルーティンを選択"}</div>
+      <div class="hint">
+        ${sel? `<b>Enter</b> または ダブルクリックで開始　　<b>E</b> 編集<br>` : `左の一覧からルーティンを選んでください<br>`}
+        実行中: <b>Space</b> 完了　<b>P</b> 一時停止　<b>S</b> スキップ　<b>↑</b><b>↓</b> ±30秒　<b>Esc</b> 中断
+      </div>
+      ${sel? `<button class="btn-wide" id="idleStart">▶ 開始する</button>` : ""}
+    </div>`;
+  const b = document.getElementById("idleStart");
+  if(b) b.addEventListener("click", ()=> startRoutine(SELECTED));
+}
+
+/* ---- timer engine ---- */
+let timerState = null;
+
+function startRoutine(routineId){
+  const routine = DATA.routines.find(r=>r.id===routineId);
+  if(!routine || routine.steps.length===0) return;
+  ensureAudio();
+  SELECTED = routineId;
+  const steps = routine.steps.map(s=>({...s}));
+  timerState = { routine, steps, idx:0, remaining: steps[0].duration, elapsed:0, running:true, stepActuals:[], startedAt: Date.now() };
+  MODE = "timer";
+  renderSide();
+  renderTimer();
+  runTick();
+}
+
+function stopTimer(){
+  if(timerState) clearInterval(timerState.timerHandle);
+  timerState = null;
+}
+
+function runTick(){
+  clearInterval(timerState.timerHandle);
+  timerState.timerHandle = setInterval(()=>{
+    if(!timerState || !timerState.running) return;
+    timerState.remaining--;
+    timerState.elapsed++;
+    if(timerState.remaining === 0) beepTimeUp();
+    updateTimerDynamic();
+  }, 1000);
+}
+
+function adjustRemaining(d){
+  if(!timerState) return;
+  timerState.remaining += d;
+  updateTimerDynamic();
+}
+
+function completeCurrentStep(){
+  if(!timerState) return;
+  const step = timerState.steps[timerState.idx];
+  timerState.stepActuals.push({name:step.name, duration:step.duration, actual:timerState.elapsed});
+  beepAdvance();
+  advanceAfterStep();
+}
+
+function skipCurrentStep(){
+  if(!timerState) return;
+  const step = timerState.steps.splice(timerState.idx,1)[0];
+  timerState.stepActuals.push({name:step.name, duration:step.duration, actual:0, skipped:true});
+  if(timerState.idx >= timerState.steps.length){ finishRoutine(); return; }
+  timerState.remaining = timerState.steps[timerState.idx].duration;
+  timerState.elapsed = 0;
+  renderTimer();
+}
+
+function advanceAfterStep(){
+  if(timerState.idx < timerState.steps.length-1){
+    timerState.idx++;
+    timerState.remaining = timerState.steps[timerState.idx].duration;
+    timerState.elapsed = 0;
+    renderTimer();
+  } else {
+    finishRoutine();
+  }
+}
+
+function finishRoutine(){
+  clearInterval(timerState.timerHandle);
+  const routine = timerState.routine;
+  const plannedTotal = timerState.stepActuals.reduce((a,s)=>a+s.duration,0);
+  const actualTotal = timerState.stepActuals.reduce((a,s)=>a+s.actual,0);
+  const start = new Date(timerState.startedAt);
+  const startTime = `${String(start.getHours()).padStart(2,"0")}:${String(start.getMinutes()).padStart(2,"0")}`;
+  const log = { date: todayStr(), routineId: routine.id, plannedSeconds: plannedTotal,
+    actualSeconds: actualTotal, startTime, steps: timerState.stepActuals };
+  DATA.logs.push(log);
+  saveData(DATA);
+  const streak = computeStreak(routine.id);
+  timerState = null;
+  showCelebration(streak, ()=>{ renderSide(); showSummary(log, routine); });
+}
+
+function showCelebration(streak, done){
+  const el = document.createElement("div");
+  el.className = "celebrate flash";
+  el.innerHTML = `<div class="txt">継続日数${streak}日目になりました!</div>`;
+  for(let i=0;i<12;i++){
+    const s = document.createElement("div");
+    s.className = "spark";
+    s.style.left = (10+Math.random()*80)+"%";
+    s.style.top = (20+Math.random()*60)+"%";
+    s.style.animationDelay = (Math.random()*0.5)+"s";
+    el.appendChild(s);
+  }
+  document.body.appendChild(el);
+  setTimeout(()=>{ el.remove(); done(); }, 1700);
+}
+
+const RING_SEGS = 24;
+function tickClasses(duration, remaining){
+  const overtime = remaining < 0;
+  const ratio = overtime ? 1 : (1 - remaining/duration);
+  const onSegs = Math.min(RING_SEGS, Math.round(ratio*RING_SEGS));
+  const warnLate = !overtime && remaining < 10;
+  const arr = [];
+  for(let i=0;i<RING_SEGS;i++){
+    if(overtime) arr.push("over");
+    else if(i<onSegs) arr.push(warnLate?"warn":"on");
+    else arr.push("");
+  }
+  return { arr, overtime };
+}
+function ringSVG(arr){
+  let ticks = "";
+  for(let i=0;i<arr.length;i++){
+    const angle = i*(360/arr.length);
+    const cls = "ring-tick" + (arr[i] ? " "+arr[i] : "");
+    ticks += `<rect class="${cls}" x="47.5" y="2" width="5" height="13" transform="rotate(${angle} 50 50)"></rect>`;
+  }
+  return `<svg class="ring" viewBox="0 0 100 100">${ticks}</svg>`;
+}
+function etaInfo(){
+  const { idx, remaining, steps } = timerState;
+  const remainingStepsSec = steps.slice(idx).reduce((a,s,i)=> a + (i===0?Math.max(0,remaining):s.duration),0);
+  const eta = new Date(Date.now()+remainingStepsSec*1000);
+  const etaStr = `${String(eta.getHours()).padStart(2,"0")}:${String(eta.getMinutes()).padStart(2,"0")}`;
+  return `残り ${fmtMMSS(remainingStepsSec)}　　終了予定 ${etaStr}`;
+}
+
+function renderTimer(){
+  if(!timerState) return;
+  MODE = "timer";
+  const { idx, remaining, steps, running } = timerState;
+  const step = steps[idx];
+  const { arr, overtime } = tickClasses(step.duration, remaining);
+
+  const previewRows = steps.map((s,i)=>{
+    let cls = "row";
+    if(i<idx) cls+=" done"; else if(i===idx) cls+=" cur";
+    return `<div class="${cls}"><span class="mk">${i===idx?"▶":""}</span>${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.floor(s.duration/60)}m</span></div>`;
+  }).join("");
+
+  mainPane.innerHTML = `
+    <div class="trun${running?"":" paused"}">
+      <div class="trun-left">
+        <div class="step-name">${escapeHtml(step.name)}</div>
+        <div class="ring-wrap">
+          ${ringSVG(arr)}
+          <div class="ring-inner">
+            <div class="countdown${overtime?' over':''}" id="cd">${fmtMMSS(remaining)}</div>
+            <div class="step-count">${idx+1} / ${steps.length}</div>
+            <div id="stateLabel">${overtime? `<div class="over-label">予定時間オーバー</div>` : (running? "" : `<div class="pause-label">一時停止中</div>`)}</div>
+          </div>
+        </div>
+        <div class="timer-controls">
+          <button id="tPause" title="一時停止 (P)">${px(running? ICON.pause : ICON.play)}</button>
+          <button class="main" id="tDone" title="このステップを完了 (Space)">${px(ICON.check)}</button>
+          <button id="tSkip" title="スキップ (S)">${px(ICON.skip)}</button>
+          <button id="tClose" title="中断 (Esc)">${px(ICON.close)}</button>
+        </div>
+        <div class="time-adjust">
+          <button id="tMinus">−30秒 (↓)</button>
+          <button id="tPlus">+30秒 (↑)</button>
+        </div>
+      </div>
+      <div class="trun-right">
+        <div class="routine-title">${escapeHtml(timerState.routine.name)}</div>
+        <div class="step-preview">${previewRows}</div>
+        <div class="finish-eta" id="etaLine">${etaInfo()}</div>
+        <div class="kbd-hint"><b>Space</b>完了　<b>P</b>一時停止　<b>S</b>スキップ　<b>↑</b><b>↓</b>±30秒　<b>Esc</b>中断</div>
+      </div>
+    </div>`;
+  document.getElementById("tClose").addEventListener("click", ()=>{ stopTimer(); showIdle(); });
+  document.getElementById("tPause").addEventListener("click", ()=>{ timerState.running=!timerState.running; renderTimer(); });
+  document.getElementById("tDone").addEventListener("click", completeCurrentStep);
+  document.getElementById("tSkip").addEventListener("click", skipCurrentStep);
+  document.getElementById("tMinus").addEventListener("click", ()=> adjustRemaining(-30));
+  document.getElementById("tPlus").addEventListener("click", ()=> adjustRemaining(30));
+}
+
+function updateTimerDynamic(){
+  if(!timerState) return;
+  const step = timerState.steps[timerState.idx];
+  const { arr, overtime } = tickClasses(step.duration, timerState.remaining);
+  const cd = document.getElementById("cd");
+  if(cd){
+    cd.textContent = fmtMMSS(timerState.remaining);
+    cd.className = "countdown" + (overtime?" over":"");
+  }
+  mainPane.querySelectorAll(".ring-tick").forEach((el,i)=>{
+    el.setAttribute("class", "ring-tick" + (arr[i] ? " "+arr[i] : ""));
+  });
+  const stateLabel = document.getElementById("stateLabel");
+  if(stateLabel){
+    stateLabel.innerHTML = overtime ? `<div class="over-label">予定時間オーバー</div>`
+      : (timerState.running ? "" : `<div class="pause-label">一時停止中</div>`);
+  }
+  const etaLine = document.getElementById("etaLine");
+  if(etaLine) etaLine.textContent = etaInfo();
+}
+
+/* ---- summary ---- */
+function showSummary(log, routine){
+  MODE = "summary";
+  const streak = computeStreak(routine.id);
+  const total = totalDays(routine.id);
+  const diff = log.actualSeconds - log.plannedSeconds;
+  const overrun = diff > 0;
+  const diffStr = (overrun? "+":"-") + fmtMMSS(Math.abs(diff));
+  const rows = log.steps.map(s=>{
+    const stepOver = !s.skipped && s.actual > s.duration;
+    return `
+    <div class="srow${s.skipped? "" : " done"}">
+      <div class="nm">${escapeHtml(s.name)}</div>
+      <div class="tm mono${stepOver? " overrun":""}">${Math.floor(s.actual/60)}m ${s.actual%60}s</div>
+      <div class="ck">${s.skipped? "－" : "✓"}</div>
+    </div>`;
+  }).join("");
+
+  mainPane.innerHTML = `
+    <div class="summary">
+      <h2>${escapeHtml(routine.name)}</h2>
+      <div class="start-at">${log.startTime||""} 開始</div>
+      <div class="sum-tiles">
+        <div class="stat-tile"><div class="lbl">継続日数</div><div class="val">${streak}</div></div>
+        <div class="stat-tile"><div class="lbl">合計日数</div><div class="val">${total}</div></div>
+      </div>
+      <div class="total-box">
+        <div class="total-row">
+          <div><div style="font-size:11px;color:var(--tx2)">合計</div>
+          <div class="val mono">${fmtMMSS(log.actualSeconds)}</div></div>
+          <div class="diff${overrun? " overrun":""}">${diffStr}</div>
+        </div>
+        ${rows}
+      </div>
+      <button class="btn-wide" id="backIdle">もどる (Esc)</button>
+    </div>`;
+  document.getElementById("backIdle").addEventListener("click", showIdle);
+}
+
+/* ---- edit ---- */
+let editDraft = null;
+
+function showEdit(routineId){
+  MODE = "edit";
+  const existing = routineId ? DATA.routines.find(r=>r.id===routineId) : null;
+  editDraft = existing ? JSON.parse(JSON.stringify(existing)) : { id:"r_"+Date.now(), name:"", steps:[] };
+  paintEdit();
+}
+
+function paintEdit(){
+  const d = editDraft;
+  const isNew = !DATA.routines.find(r=>r.id===d.id);
+  const stepsHtml = d.steps.map((s,i)=>`
+    <div class="step-row">
+      <div class="ord">
+        <button data-mv="${i},-1" ${i===0?"disabled":""}>${px(ICON.up)}</button>
+        <button data-mv="${i},1" ${i===d.steps.length-1?"disabled":""}>${px(ICON.down)}</button>
+      </div>
+      <input type="text" value="${escapeHtml(s.name)}" placeholder="ステップ名" data-field="name" data-idx="${i}" />
+      <input type="number" class="dur" min="10" step="10" value="${s.duration}" data-field="duration" data-idx="${i}" />
+      <button class="rm" data-rm="${i}">${px(ICON.close)}</button>
+    </div>`).join("");
+
+  mainPane.innerHTML = `
+    <div class="editv">
+      <h2>${isNew? "新規ルーティン" : "編集"}</h2>
+      <div class="field">
+        <label>ルーティン名</label>
+        <input type="text" id="fName" value="${escapeHtml(d.name)}" placeholder="例: 朝のルーティン" />
+      </div>
+      <div class="field">
+        <label>ステップ（秒数は1項目あたりの予定時間）</label>
+        <div id="stepsEdit">${stepsHtml}</div>
+        <button class="add-step-btn" id="addStep">＋ ステップを追加</button>
+      </div>
+      <div class="edit-actions">
+        <button class="btn-wide" id="saveRoutine">保存する</button>
+        <button class="btn-wide ghost" id="cancelEdit">キャンセル (Esc)</button>
+        ${isNew? "" : `<button class="btn-wide danger" id="delRoutine">削除</button>`}
+      </div>
+    </div>`;
+
+  document.getElementById("fName").addEventListener("input", e=> d.name = e.target.value);
+  document.getElementById("cancelEdit").addEventListener("click", showIdle);
+  mainPane.querySelectorAll("[data-field]").forEach(inp=>{
+    inp.addEventListener("input", ()=>{
+      const i = Number(inp.dataset.idx); const f = inp.dataset.field;
+      d.steps[i][f] = f==="duration" ? Math.max(10, Number(inp.value)||10) : inp.value;
+    });
+  });
+  mainPane.querySelectorAll("[data-mv]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const [i, dir] = btn.dataset.mv.split(",").map(Number);
+      const j = i + dir;
+      if(j<0 || j>=d.steps.length) return;
+      [d.steps[i], d.steps[j]] = [d.steps[j], d.steps[i]];
+      paintEdit();
+    });
+  });
+  mainPane.querySelectorAll("[data-rm]").forEach(btn=>{
+    btn.addEventListener("click", ()=>{ d.steps.splice(Number(btn.dataset.rm),1); paintEdit(); });
+  });
+  document.getElementById("addStep").addEventListener("click", ()=>{
+    d.steps.push({id:"s_"+Date.now(), name:"", duration:120});
+    paintEdit();
+    const inputs = mainPane.querySelectorAll('[data-field="name"]');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  });
+  document.getElementById("saveRoutine").addEventListener("click", ()=>{
+    if(!d.name.trim()){ alert("ルーティン名を入力してください"); return; }
+    d.steps = d.steps.filter(s=>s.name.trim());
+    if(d.steps.length===0){ alert("ステップを1つ以上追加してください"); return; }
+    const idx = DATA.routines.findIndex(r=>r.id===d.id);
+    if(idx>=0) DATA.routines[idx] = d; else DATA.routines.push(d);
+    saveData(DATA);
+    SELECTED = d.id;
+    renderSide();
+    showIdle();
+  });
+  const delBtn = document.getElementById("delRoutine");
+  if(delBtn) delBtn.addEventListener("click", ()=>{
+    if(!confirm("このルーティンを削除しますか？")) return;
+    DATA.routines = DATA.routines.filter(r=>r.id!==d.id);
+    DATA.logs = DATA.logs.filter(l=>l.routineId!==d.id);
+    saveData(DATA);
+    if(SELECTED===d.id) SELECTED = null;
+    renderSide();
+    showIdle();
+  });
+}
+
+/* ============ keyboard ============ */
+document.addEventListener("keydown", (e)=>{
+  const inInput = /INPUT|TEXTAREA/.test(document.activeElement?.tagName || "");
+  if(MODE==="timer" && timerState){
+    if(e.code==="Space"){ e.preventDefault(); completeCurrentStep(); }
+    else if(e.key==="p" || e.key==="P"){ timerState.running=!timerState.running; renderTimer(); }
+    else if(e.key==="s" || e.key==="S"){ skipCurrentStep(); }
+    else if(e.key==="ArrowUp"){ e.preventDefault(); adjustRemaining(30); }
+    else if(e.key==="ArrowDown"){ e.preventDefault(); adjustRemaining(-30); }
+    else if(e.key==="Escape"){ stopTimer(); showIdle(); }
+    return;
+  }
+  if(inInput){
+    if(e.key==="Escape" && MODE==="edit") showIdle();
+    return;
+  }
+  if(MODE==="idle"){
+    if(e.key==="Enter" && SELECTED){ startRoutine(SELECTED); }
+    else if((e.key==="e"||e.key==="E") && SELECTED){ showEdit(SELECTED); }
+    else if(e.key==="ArrowUp" || e.key==="ArrowDown"){
+      e.preventDefault();
+      const ids = DATA.routines.map(r=>r.id);
+      if(ids.length===0) return;
+      let i = ids.indexOf(SELECTED);
+      i = e.key==="ArrowDown" ? Math.min(ids.length-1, i+1) : Math.max(0, i<0?0:i-1);
+      SELECTED = ids[i];
+      renderSide(); showIdle();
+    }
+  } else if(MODE==="summary" && e.key==="Escape"){ showIdle(); }
+  else if(MODE==="edit" && e.key==="Escape"){ showIdle(); }
+});
+
+/* ============ boot ============ */
+document.getElementById("addRoutine").addEventListener("click", ()=> showEdit(null));
+if(DATA.routines.length) SELECTED = DATA.routines[0].id;
+renderSide();
+showIdle();
+</script>
+</body>
+</html>

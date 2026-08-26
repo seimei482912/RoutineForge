@@ -14,9 +14,7 @@
     "productName": "RoutineForge",
     "files": [
       "main.js",
-      "index.html",
-      "manifest.json",
-      "sw.js",
+      "desktop.html",
       "icons/**/*"
     ],
     "win": {

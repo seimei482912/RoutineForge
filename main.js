@@ -3,9 +3,9 @@ const path = require("path");
 
 function createWindow() {
   const win = new BrowserWindow({
-    width: 480,
-    height: 900,
-    minWidth: 360,
+    width: 1024,
+    height: 720,
+    minWidth: 900,
     minHeight: 600,
     backgroundColor: "#000000",
     autoHideMenuBar: true,
@@ -16,7 +16,7 @@ function createWindow() {
       nodeIntegration: false
     }
   });
-  win.loadFile("index.html");
+  win.loadFile("desktop.html");
 }
 
 app.whenReady().then(() => {
