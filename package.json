@@ -1,0 +1,41 @@
+{
+  "name": "routineforge",
+  "version": "1.0.0",
+  "description": "自分専用ルーティン実行アプリ（PC版）",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "author": "masterkey",
+  "license": "UNLICENSED",
+  "build": {
+    "appId": "jp.masterkey.routineforge",
+    "productName": "RoutineForge",
+    "files": [
+      "main.js",
+      "index.html",
+      "manifest.json",
+      "sw.js",
+      "icons/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icons/icon-256.ico"
+    },
+    "portable": {
+      "artifactName": "RoutineForge.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.0.0",
+    "electron-builder": "^26.15.3"
+  }
+}
