@@ -21,7 +21,7 @@ body{
                     repeating-linear-gradient(90deg, rgba(255,255,255,.02) 0px, rgba(255,255,255,.02) 1px, transparent 1px, transparent 4px);
 }
 button{font-family:inherit; color:inherit; cursor:pointer;}
-input{font-family:inherit;}
+input{font-family:inherit; user-select:text; -webkit-user-select:text;}
 .mono{font-family:var(--f-mono); font-variant-numeric:tabular-nums;}
 .pxi{shape-rendering:crispEdges; fill:currentColor; display:block;}
 
@@ -341,8 +341,19 @@ function renderSide(){
     </div>`;
   }).join("");
   list.querySelectorAll(".rcard").forEach(el=>{
-    el.addEventListener("click", ()=>{ SELECTED = el.dataset.id; renderSide(); showIdle(); });
-    el.addEventListener("dblclick", ()=> startRoutine(el.dataset.id));
+    el.addEventListener("click", ()=>{
+      if(timerState){
+        if(!confirm("実行中のルーティンを中断しますか？")) return;
+        stopTimer();
+      }
+      SELECTED = el.dataset.id; renderSide(); showIdle();
+    });
+    el.addEventListener("dblclick", ()=>{
+      if(timerState && timerState.routine.id !== el.dataset.id){
+        if(!confirm("実行中のルーティンを中断しますか？")) return;
+      }
+      startRoutine(el.dataset.id);
+    });
   });
 
   const stats = document.getElementById("sideStats");
@@ -402,6 +413,7 @@ let timerState = null;
 function startRoutine(routineId){
   const routine = DATA.routines.find(r=>r.id===routineId);
   if(!routine || routine.steps.length===0) return;
+  stopTimer();
   ensureAudio();
   SELECTED = routineId;
   const steps = routine.steps.map(s=>({...s}));
@@ -641,6 +653,10 @@ function showSummary(log, routine){
 let editDraft = null;
 
 function showEdit(routineId){
+  if(timerState){
+    if(!confirm("実行中のルーティンを中断しますか？")) return;
+    stopTimer();
+  }
   MODE = "edit";
   const existing = routineId ? DATA.routines.find(r=>r.id===routineId) : null;
   editDraft = existing ? JSON.parse(JSON.stringify(existing)) : { id:"r_"+Date.now(), name:"", steps:[] };
@@ -731,6 +747,7 @@ function paintEdit(){
 
 /* ============ keyboard ============ */
 document.addEventListener("keydown", (e)=>{
+  if(e.ctrlKey || e.metaKey || e.altKey) return;
   const inInput = /INPUT|TEXTAREA/.test(document.activeElement?.tagName || "");
   if(MODE==="timer" && timerState){
     if(e.code==="Space"){ e.preventDefault(); completeCurrentStep(); }
@@ -746,7 +763,7 @@ document.addEventListener("keydown", (e)=>{
     return;
   }
   if(MODE==="idle"){
-    if(e.key==="Enter" && SELECTED){ startRoutine(SELECTED); }
+    if(e.key==="Enter" && SELECTED){ e.preventDefault(); startRoutine(SELECTED); }
     else if((e.key==="e"||e.key==="E") && SELECTED){ showEdit(SELECTED); }
     else if(e.key==="ArrowUp" || e.key==="ArrowDown"){
       e.preventDefault();
@@ -762,6 +779,12 @@ document.addEventListener("keydown", (e)=>{
 });
 
 /* ============ boot ============ */
+// ボタンにフォーカスが残ると、次にSpace/Enterを押した時にショートカットとボタンの
+// 両方が発火して二重動作になるため、クリック後は必ずフォーカスを外す
+document.addEventListener("click", (e)=>{
+  const btn = e.target.closest("button");
+  if(btn) btn.blur();
+});
 document.getElementById("addRoutine").addEventListener("click", ()=> showEdit(null));
 if(DATA.routines.length) SELECTED = DATA.routines[0].id;
 renderSide();
