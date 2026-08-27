@@ -111,8 +111,8 @@ button{font-family:inherit; color:inherit; cursor:pointer; -webkit-tap-highlight
 .ring-inner .over-label{font-size:11px; color:var(--rd); letter-spacing:.05em;}
 .ring-inner .pause-label{font-size:11px; color:var(--tx2); letter-spacing:.05em;}
 .paused .ring-wrap svg.ring{opacity:.45;}
-.time-adjust{display:flex; justify-content:center; gap:10px; margin-top:14px;}
-.time-adjust button{border:2px solid var(--line2); background:var(--panel); color:var(--tx2); padding:6px 14px; font-size:12px; font-family:var(--f-mono);}
+.time-adjust{display:flex; justify-content:center; gap:5px; margin-top:14px; flex-wrap:wrap;}
+.time-adjust button{border:2px solid var(--line2); background:var(--panel); color:var(--tx2); padding:6px 7px; font-size:11px; font-family:var(--f-mono);}
 .time-adjust button:active{background:var(--well); color:var(--tx);}
 
 .modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:60; display:flex; align-items:flex-end; justify-content:center;}
@@ -666,8 +666,12 @@ function renderTimer(){
         </div>
       </div>
       <div class="time-adjust">
-        <button id="tMinus">−1分</button>
-        <button id="tPlus">+1分</button>
+        <button data-adj="-10">−10分</button>
+        <button data-adj="-5">−5分</button>
+        <button data-adj="-1">−1分</button>
+        <button data-adj="1">+1分</button>
+        <button data-adj="5">+5分</button>
+        <button data-adj="10">+10分</button>
       </div>
       <div class="timer-controls">
         <button id="tPause" aria-label="${running? "一時停止":"再開"}">${px(running? ICON.pause : ICON.play)}</button>
@@ -686,8 +690,9 @@ function renderTimer(){
   });
   document.getElementById("tDone").addEventListener("click", completeCurrentStep);
   document.getElementById("tSkip").addEventListener("click", openSkipModal);
-  document.getElementById("tMinus").addEventListener("click", ()=> adjustRemaining(-60));
-  document.getElementById("tPlus").addEventListener("click", ()=> adjustRemaining(60));
+  root.querySelectorAll("[data-adj]").forEach(btn=>{
+    btn.addEventListener("click", ()=> adjustRemaining(Number(btn.dataset.adj)*60));
+  });
 }
 
 function updateTimerDynamic(){

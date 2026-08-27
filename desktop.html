@@ -585,8 +585,12 @@ function renderTimer(){
           <button id="tClose" title="中断 (Esc)">${px(ICON.close)}</button>
         </div>
         <div class="time-adjust">
-          <button id="tMinus">−1分 (↓)</button>
-          <button id="tPlus">+1分 (↑)</button>
+          <button data-adj="-10">−10分</button>
+          <button data-adj="-5">−5分</button>
+          <button data-adj="-1">−1分 (↓)</button>
+          <button data-adj="1">+1分 (↑)</button>
+          <button data-adj="5">+5分</button>
+          <button data-adj="10">+10分</button>
         </div>
       </div>
       <div class="trun-right">
@@ -600,8 +604,9 @@ function renderTimer(){
   document.getElementById("tPause").addEventListener("click", ()=>{ timerState.running=!timerState.running; renderTimer(); });
   document.getElementById("tDone").addEventListener("click", completeCurrentStep);
   document.getElementById("tSkip").addEventListener("click", skipCurrentStep);
-  document.getElementById("tMinus").addEventListener("click", ()=> adjustRemaining(-60));
-  document.getElementById("tPlus").addEventListener("click", ()=> adjustRemaining(60));
+  mainPane.querySelectorAll("[data-adj]").forEach(btn=>{
+    btn.addEventListener("click", ()=> adjustRemaining(Number(btn.dataset.adj)*60));
+  });
   mainPane.querySelectorAll("[data-editstep]").forEach(el=>{
     el.addEventListener("click", ()=> beginStepNameEdit(Number(el.dataset.editstep)));
   });
