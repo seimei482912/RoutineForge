@@ -1,6 +1,12 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
 
+// テスト実行時は本物のユーザーデータと完全に分離した保存領域を使う
+// (テストが実データを消す事故の再発防止)
+if (process.env.RF_TEST_USERDATA) {
+  app.setPath("userData", process.env.RF_TEST_USERDATA);
+}
+
 // 二重起動防止(複数ウインドウが並ぶとキー入力先が分からなくなるため)
 if (!app.requestSingleInstanceLock()) {
   app.quit();

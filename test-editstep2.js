@@ -3,6 +3,7 @@ const { _electron } = require("playwright-core");
 (async () => {
   const env = { ...process.env };
   delete env.ELECTRON_RUN_AS_NODE;
+  env.RF_TEST_USERDATA = require("path").join(require("os").tmpdir(), "routineforge-testdata");
   const app = await _electron.launch({
     executablePath: "dist/win-unpacked/RoutineForge.exe",
     env

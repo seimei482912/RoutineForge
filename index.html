@@ -265,27 +265,8 @@ const STORE_KEY = "routineforge_data_v1";
 function loadData(){
   const raw = localStorage.getItem(STORE_KEY);
   if(raw){ try{ return JSON.parse(raw); }catch(e){} }
-  const data = {
-    routines: [
-      {
-        id: "r_morning", name: "朝のルーティン",
-        steps: [
-          {id:"s1", name:"背伸びをして水を一杯飲む", duration:120},
-          {id:"s2", name:"ベッドを整える", duration:120},
-          {id:"s3", name:"天気を確認する", duration:120}
-        ]
-      },
-      {
-        id: "r_night", name: "ナイトルーティン",
-        steps: [
-          {id:"s4", name:"机の上を片付ける", duration:180},
-          {id:"s5", name:"明日の準備をする", duration:180},
-          {id:"s6", name:"軽くストレッチする", duration:120}
-        ]
-      }
-    ],
-    logs: [] // {date:"YYYY-MM-DD", routineId, actualSeconds, plannedSeconds, startTime, steps:[{name,duration,actual}]}
-  };
+  // デモデータの自動投入はしない(空の状態から始める)
+  const data = { routines: [], logs: [] };
   saveData(data);
   return data;
 }
