@@ -67,10 +67,24 @@ input{font-family:inherit; user-select:text; -webkit-user-select:text;}
 #mainPane{flex:1; display:flex; flex-direction:column; min-width:0; overflow-y:auto;}
 
 /* --- idle --- */
-.idle{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; padding:40px;}
-.idle .big{font-family:var(--f-dis); font-size:22px; font-weight:700; color:var(--tx2);}
+.idle{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px; padding:36px 40px;}
+.idle .big{font-family:var(--f-dis); font-size:24px; font-weight:700;}
 .idle .hint{font-size:12px; color:var(--tx3); line-height:2;}
 .idle .hint b{color:var(--tx2); font-family:var(--f-mono); border:1px solid var(--line2); padding:1px 7px; margin:0 2px;}
+.idle-panel{width:100%; max-width:560px; background:var(--well); border:2px solid var(--line); padding:0;}
+.idle-panel .ip-head{display:flex; align-items:baseline; justify-content:space-between;
+  padding:12px 14px; border-bottom:2px solid var(--line);}
+.idle-panel .ip-head .ttl{font-family:var(--f-dis); font-size:15px; font-weight:700;}
+.idle-panel .ip-head .sum{font-family:var(--f-mono); font-size:12px; color:var(--tx2);}
+.idle-steps .irow{display:flex; align-items:center; gap:12px; padding:11px 14px; font-size:14px;
+  border-bottom:1px solid var(--line);}
+.idle-steps .irow:last-child{border-bottom:none;}
+.idle-steps .irow .no{font-family:var(--f-mono); font-size:12px; color:var(--tx3); width:18px; flex-shrink:0;}
+.idle-steps .irow .nm{flex:1; min-width:0;}
+.idle-steps .irow .nm.editable{cursor:text; border-bottom:1px dashed var(--line2); align-self:center;}
+.idle-steps .irow .nm.editable:hover{border-bottom-color:var(--tx2);}
+.idle-steps .irow .dur{font-family:var(--f-mono); font-size:12px; color:var(--tx2); flex-shrink:0;}
+.idle-empty{padding:18px 14px; font-size:12px; color:var(--tx3); text-align:center;}
 
 /* --- timer --- */
 .trun{flex:1; display:flex; padding:26px 30px; gap:34px; align-items:stretch;}
@@ -406,17 +420,72 @@ let MODE = "idle"; // idle | timer | summary | edit
 function showIdle(){
   MODE = "idle";
   const sel = DATA.routines.find(r=>r.id===SELECTED);
+
+  let panel = "";
+  if(sel){
+    const rows = sel.steps.length
+      ? sel.steps.map((s,i)=>`
+          <div class="irow">
+            <span class="no">${i+1}</span>
+            <span class="nm editable" data-idleedit="${i}" title="クリックで名前を編集">${escapeHtml(s.name)}</span>
+            <span class="dur">${Math.round(s.duration/60)}分</span>
+          </div>`).join("")
+      : `<div class="idle-empty">ステップがありません（<b>E</b> で編集）</div>`;
+    panel = `
+      <div class="idle-panel">
+        <div class="ip-head">
+          <span class="ttl">ステップ</span>
+          <span class="sum">全${sel.steps.length}項目　合計 ${fmtTotal(sel)}</span>
+        </div>
+        <div class="idle-steps">${rows}</div>
+      </div>`;
+  }
+
   mainPane.innerHTML = `
     <div class="idle">
       <div class="big">${sel? escapeHtml(sel.name) : "ルーティンを選択"}</div>
+      ${panel}
+      ${sel? `<button class="btn-wide" id="idleStart">▶ 開始する</button>` : ""}
       <div class="hint">
-        ${sel? `<b>Enter</b> または ダブルクリックで開始　　<b>E</b> 編集<br>` : `左の一覧からルーティンを選んでください<br>`}
+        ${sel? `<b>Enter</b> または ダブルクリックで開始　　<b>E</b> 編集　　ステップ名はクリックで変更<br>` : `左の一覧からルーティンを選んでください<br>`}
         実行中: <b>Space</b> 完了　<b>P</b> 一時停止　<b>S</b> スキップ　<b>↑</b><b>↓</b> ±1分　<b>Esc</b> 中断
       </div>
-      ${sel? `<button class="btn-wide" id="idleStart">▶ 開始する</button>` : ""}
     </div>`;
   const b = document.getElementById("idleStart");
   if(b) b.addEventListener("click", ()=> startRoutine(SELECTED));
+  mainPane.querySelectorAll("[data-idleedit]").forEach(el=>{
+    el.addEventListener("click", ()=> beginIdleStepNameEdit(Number(el.dataset.idleedit)));
+  });
+}
+
+/* トップ画面のステップ一覧でも、その場で名前を変更できる */
+function beginIdleStepNameEdit(i){
+  const routine = DATA.routines.find(r=>r.id===SELECTED);
+  if(!routine || !routine.steps[i]) return;
+  const span = mainPane.querySelector(`[data-idleedit="${i}"]`);
+  if(!span) return;
+  const old = routine.steps[i].name;
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.value = old;
+  inp.className = "inline-edit";
+  span.replaceWith(inp);
+  inp.focus();
+  inp.select();
+  let finished = false;
+  const commit = ()=>{
+    if(finished) return;
+    finished = true;
+    const v = inp.value.trim();
+    if(v && v !== old){ routine.steps[i].name = v; saveData(DATA); }
+    showIdle();
+  };
+  inp.addEventListener("keydown", (e)=>{
+    e.stopPropagation();
+    if(e.key==="Enter") commit();
+    else if(e.key==="Escape"){ finished = true; showIdle(); }
+  });
+  inp.addEventListener("blur", commit);
 }
 
 /* ---- timer engine ---- */
