@@ -108,6 +108,10 @@ input{font-family:inherit; user-select:text; -webkit-user-select:text;}
 .step-preview .row{display:flex; align-items:center; gap:10px; padding:10px 10px; font-size:14px; color:var(--tx2);
   border-left:3px solid transparent; border-bottom:1px solid var(--line);}
 .step-preview .row .mk{font-family:var(--f-mono); width:14px; flex-shrink:0; color:var(--ye);}
+.step-preview .row .step-nm.editable{cursor:text; border-bottom:1px dashed var(--line2);}
+.step-preview .row .step-nm.editable:hover{border-bottom-color:var(--tx2);}
+.inline-edit{background:var(--panel); border:1px solid var(--cy); color:var(--tx); padding:2px 6px;
+  font:inherit; font-size:14px; width:240px;}
 .step-preview .row.cur{color:var(--ye);}
 .step-preview .row.done{background:rgba(255,210,63,.14); border-left-color:var(--ye); color:var(--tx2);
   text-decoration:line-through; text-decoration-color:var(--tx3);}
@@ -575,7 +579,10 @@ function renderTimer(){
   const previewRows = steps.map((s,i)=>{
     let cls = "row";
     if(i<idx) cls+=" done"; else if(i===idx) cls+=" cur";
-    return `<div class="${cls}"><span class="mk">${i===idx?"▶":""}</span>${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.round(s.duration/60)}分</span></div>`;
+    const nameHtml = i>=idx
+      ? `<span class="step-nm editable" data-editstep="${i}" title="クリックで名前を編集">${escapeHtml(s.name)}</span>`
+      : `<span class="step-nm">${escapeHtml(s.name)}</span>`;
+    return `<div class="${cls}"><span class="mk">${i===idx?"▶":""}</span>${nameHtml}<span style="margin-left:auto" class="mono">${Math.round(s.duration/60)}分</span></div>`;
   }).join("");
 
   mainPane.innerHTML = `
@@ -614,6 +621,46 @@ function renderTimer(){
   document.getElementById("tSkip").addEventListener("click", skipCurrentStep);
   document.getElementById("tMinus").addEventListener("click", ()=> adjustRemaining(-60));
   document.getElementById("tPlus").addEventListener("click", ()=> adjustRemaining(60));
+  mainPane.querySelectorAll("[data-editstep]").forEach(el=>{
+    el.addEventListener("click", ()=> beginStepNameEdit(Number(el.dataset.editstep)));
+  });
+}
+
+/* タイマー画面でステップ名をその場で編集する(実行中・一時停止中どちらでも可)。
+   変更はこの実行分だけでなくルーティン本体にも保存する。 */
+function beginStepNameEdit(i){
+  if(!timerState) return;
+  const span = mainPane.querySelector(`[data-editstep="${i}"]`);
+  if(!span || span.tagName === "INPUT") return;
+  const old = timerState.steps[i].name;
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.value = old;
+  inp.className = "inline-edit";
+  span.replaceWith(inp);
+  inp.focus();
+  inp.select();
+  let finished = false;
+  const commit = ()=>{
+    if(finished) return;
+    finished = true;
+    const v = inp.value.trim();
+    if(v && v !== old){
+      timerState.steps[i].name = v;
+      const r = DATA.routines.find(x=>x.id===timerState.routine.id);
+      if(r){
+        const orig = r.steps.find(st=>st.id===timerState.steps[i].id);
+        if(orig){ orig.name = v; saveData(DATA); }
+      }
+    }
+    renderTimer();
+  };
+  inp.addEventListener("keydown", (e)=>{
+    e.stopPropagation();
+    if(e.key==="Enter") commit();
+    else if(e.key==="Escape"){ finished = true; renderTimer(); }
+  });
+  inp.addEventListener("blur", commit);
 }
 
 function updateTimerDynamic(){
@@ -780,6 +827,7 @@ document.addEventListener("keydown", (e)=>{
   if(e.ctrlKey || e.metaKey || e.altKey) return;
   const inInput = /INPUT|TEXTAREA/.test(document.activeElement?.tagName || "");
   if(MODE==="timer" && timerState){
+    if(inInput) return;   // ステップ名のインライン編集中はショートカットを無効化
     if(e.code==="Space"){ e.preventDefault(); completeCurrentStep(); }
     else if(e.key==="p" || e.key==="P"){ timerState.running=!timerState.running; renderTimer(); }
     else if(e.key==="s" || e.key==="S"){ skipCurrentStep(); }
