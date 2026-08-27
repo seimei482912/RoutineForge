@@ -665,7 +665,7 @@ function renderTimer(){
     let cls = "row";
     if(i<idx) cls+=" done"; else if(i===idx) cls+=" cur";
     const mk = i===idx ? "▶" : (i<idx ? "" : "");
-    return `<div class="${cls}"><span class="mk">${mk}</span>${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.floor(s.duration/60)}m</span></div>`;
+    return `<div class="${cls}"><span class="mk">${mk}</span>${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.round(s.duration/60)}分</span></div>`;
   }).join("");
 
   root.innerHTML = `
@@ -685,8 +685,8 @@ function renderTimer(){
         </div>
       </div>
       <div class="time-adjust">
-        <button id="tMinus">−30秒</button>
-        <button id="tPlus">+30秒</button>
+        <button id="tMinus">−1分</button>
+        <button id="tPlus">+1分</button>
       </div>
       <div class="timer-controls">
         <button id="tPause" aria-label="${running? "一時停止":"再開"}">${px(running? ICON.pause : ICON.play)}</button>
@@ -705,8 +705,8 @@ function renderTimer(){
   });
   document.getElementById("tDone").addEventListener("click", completeCurrentStep);
   document.getElementById("tSkip").addEventListener("click", openSkipModal);
-  document.getElementById("tMinus").addEventListener("click", ()=> adjustRemaining(-30));
-  document.getElementById("tPlus").addEventListener("click", ()=> adjustRemaining(30));
+  document.getElementById("tMinus").addEventListener("click", ()=> adjustRemaining(-60));
+  document.getElementById("tPlus").addEventListener("click", ()=> adjustRemaining(60));
 }
 
 function updateTimerDynamic(){
@@ -745,7 +745,7 @@ function renderSummary(){
     return `
     <div class="srow${s.skipped? "" : " done"}">
       <div class="nm">${escapeHtml(s.name)}</div>
-      <div class="tm mono${stepOver? " overrun":""}">${Math.floor(s.actual/60)}m ${s.actual%60}s</div>
+      <div class="tm mono${stepOver? " overrun":""}">${Math.floor(s.actual/60)}分${s.actual%60}秒</div>
       <div class="ck">${s.skipped? "－" : "✓"}</div>
     </div>`;
   }).join("");
@@ -795,7 +795,7 @@ function paintEdit(){
         <button data-mv="${i},1" ${i===d.steps.length-1?"disabled":""} aria-label="下へ">${px(ICON.down)}</button>
       </div>
       <input type="text" value="${escapeHtml(s.name)}" placeholder="ステップ名" data-field="name" data-idx="${i}" />
-      <input type="number" class="dur" min="10" step="10" value="${s.duration}" data-field="duration" data-idx="${i}" />
+      <input type="number" class="dur" min="1" step="1" value="${Math.max(1, Math.round(s.duration/60))}" data-field="duration" data-idx="${i}" title="分" />
       <button class="rm" data-rm="${i}" aria-label="削除">${px(ICON.close)}</button>
     </div>`).join("");
 
@@ -811,7 +811,7 @@ function paintEdit(){
         <input type="text" id="fName" value="${escapeHtml(d.name)}" placeholder="例: 朝のルーティン" />
       </div>
       <div class="field">
-        <label>ステップ（秒数は1項目あたりの予定時間）</label>
+        <label>ステップ（数値は予定時間、分単位）</label>
         <div class="steps-edit" id="stepsEdit">${stepsHtml}</div>
         <button class="add-step-btn" id="addStep">＋ ステップを追加</button>
       </div>
@@ -825,7 +825,7 @@ function paintEdit(){
   root.querySelectorAll("[data-field]").forEach(inp=>{
     inp.addEventListener("input", ()=>{
       const i = Number(inp.dataset.idx); const f = inp.dataset.field;
-      d.steps[i][f] = f==="duration" ? Math.max(10, Number(inp.value)||10) : inp.value;
+      d.steps[i][f] = f==="duration" ? Math.max(1, Number(inp.value)||10)*60 : inp.value;
     });
   });
   root.querySelectorAll("[data-mv]").forEach(btn=>{
@@ -843,7 +843,7 @@ function paintEdit(){
     });
   });
   document.getElementById("addStep").addEventListener("click", ()=>{
-    d.steps.push({id:"s_"+Date.now(), name:"", duration:120});
+    d.steps.push({id:"s_"+Date.now(), name:"", duration:600});
     paintEdit();
     const inputs = root.querySelectorAll('[data-field="name"]');
     if(inputs.length) inputs[inputs.length-1].focus();

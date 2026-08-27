@@ -426,7 +426,7 @@ function showIdle(){
       <div class="big">${sel? escapeHtml(sel.name) : "ルーティンを選択"}</div>
       <div class="hint">
         ${sel? `<b>Enter</b> または ダブルクリックで開始　　<b>E</b> 編集<br>` : `左の一覧からルーティンを選んでください<br>`}
-        実行中: <b>Space</b> 完了　<b>P</b> 一時停止　<b>S</b> スキップ　<b>↑</b><b>↓</b> ±30秒　<b>Esc</b> 中断
+        実行中: <b>Space</b> 完了　<b>P</b> 一時停止　<b>S</b> スキップ　<b>↑</b><b>↓</b> ±1分　<b>Esc</b> 中断
       </div>
       ${sel? `<button class="btn-wide" id="idleStart">▶ 開始する</button>` : ""}
     </div>`;
@@ -575,7 +575,7 @@ function renderTimer(){
   const previewRows = steps.map((s,i)=>{
     let cls = "row";
     if(i<idx) cls+=" done"; else if(i===idx) cls+=" cur";
-    return `<div class="${cls}"><span class="mk">${i===idx?"▶":""}</span>${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.floor(s.duration/60)}m</span></div>`;
+    return `<div class="${cls}"><span class="mk">${i===idx?"▶":""}</span>${escapeHtml(s.name)}<span style="margin-left:auto" class="mono">${Math.round(s.duration/60)}分</span></div>`;
   }).join("");
 
   mainPane.innerHTML = `
@@ -597,23 +597,23 @@ function renderTimer(){
           <button id="tClose" title="中断 (Esc)">${px(ICON.close)}</button>
         </div>
         <div class="time-adjust">
-          <button id="tMinus">−30秒 (↓)</button>
-          <button id="tPlus">+30秒 (↑)</button>
+          <button id="tMinus">−1分 (↓)</button>
+          <button id="tPlus">+1分 (↑)</button>
         </div>
       </div>
       <div class="trun-right">
         <div class="routine-title">${escapeHtml(timerState.routine.name)}</div>
         <div class="step-preview">${previewRows}</div>
         <div class="finish-eta" id="etaLine">${etaInfo()}</div>
-        <div class="kbd-hint"><b>Space</b>完了　<b>P</b>一時停止　<b>S</b>スキップ　<b>↑</b><b>↓</b>±30秒　<b>Esc</b>中断</div>
+        <div class="kbd-hint"><b>Space</b>完了　<b>P</b>一時停止　<b>S</b>スキップ　<b>↑</b><b>↓</b>±1分　<b>Esc</b>中断</div>
       </div>
     </div>`;
   document.getElementById("tClose").addEventListener("click", ()=>{ stopTimer(); showIdle(); });
   document.getElementById("tPause").addEventListener("click", ()=>{ timerState.running=!timerState.running; renderTimer(); });
   document.getElementById("tDone").addEventListener("click", completeCurrentStep);
   document.getElementById("tSkip").addEventListener("click", skipCurrentStep);
-  document.getElementById("tMinus").addEventListener("click", ()=> adjustRemaining(-30));
-  document.getElementById("tPlus").addEventListener("click", ()=> adjustRemaining(30));
+  document.getElementById("tMinus").addEventListener("click", ()=> adjustRemaining(-60));
+  document.getElementById("tPlus").addEventListener("click", ()=> adjustRemaining(60));
 }
 
 function updateTimerDynamic(){
@@ -650,7 +650,7 @@ function showSummary(log, routine){
     return `
     <div class="srow${s.skipped? "" : " done"}">
       <div class="nm">${escapeHtml(s.name)}</div>
-      <div class="tm mono${stepOver? " overrun":""}">${Math.floor(s.actual/60)}m ${s.actual%60}s</div>
+      <div class="tm mono${stepOver? " overrun":""}">${Math.floor(s.actual/60)}分${s.actual%60}秒</div>
       <div class="ck">${s.skipped? "－" : "✓"}</div>
     </div>`;
   }).join("");
@@ -700,7 +700,7 @@ function paintEdit(){
         <button data-mv="${i},1" ${i===d.steps.length-1?"disabled":""}>${px(ICON.down)}</button>
       </div>
       <input type="text" value="${escapeHtml(s.name)}" placeholder="ステップ名" data-field="name" data-idx="${i}" />
-      <input type="number" class="dur" min="10" step="10" value="${s.duration}" data-field="duration" data-idx="${i}" />
+      <input type="number" class="dur" min="1" step="1" value="${Math.max(1, Math.round(s.duration/60))}" data-field="duration" data-idx="${i}" title="分" />
       <button class="rm" data-rm="${i}">${px(ICON.close)}</button>
     </div>`).join("");
 
@@ -712,7 +712,7 @@ function paintEdit(){
         <input type="text" id="fName" value="${escapeHtml(d.name)}" placeholder="例: 朝のルーティン" />
       </div>
       <div class="field">
-        <label>ステップ（秒数は1項目あたりの予定時間）</label>
+        <label>ステップ（数値は予定時間、分単位）</label>
         <div id="stepsEdit">${stepsHtml}</div>
         <button class="add-step-btn" id="addStep">＋ ステップを追加</button>
       </div>
@@ -729,7 +729,7 @@ function paintEdit(){
   mainPane.querySelectorAll("[data-field]").forEach(inp=>{
     inp.addEventListener("input", ()=>{
       const i = Number(inp.dataset.idx); const f = inp.dataset.field;
-      d.steps[i][f] = f==="duration" ? Math.max(10, Number(inp.value)||10) : inp.value;
+      d.steps[i][f] = f==="duration" ? Math.max(1, Number(inp.value)||10)*60 : inp.value;
     });
   });
   mainPane.querySelectorAll("[data-mv]").forEach(btn=>{
@@ -745,7 +745,7 @@ function paintEdit(){
     btn.addEventListener("click", ()=>{ d.steps.splice(Number(btn.dataset.rm),1); paintEdit(); });
   });
   document.getElementById("addStep").addEventListener("click", ()=>{
-    d.steps.push({id:"s_"+Date.now(), name:"", duration:120});
+    d.steps.push({id:"s_"+Date.now(), name:"", duration:600});
     paintEdit();
     const inputs = mainPane.querySelectorAll('[data-field="name"]');
     if(inputs.length) inputs[inputs.length-1].focus();
@@ -783,8 +783,8 @@ document.addEventListener("keydown", (e)=>{
     if(e.code==="Space"){ e.preventDefault(); completeCurrentStep(); }
     else if(e.key==="p" || e.key==="P"){ timerState.running=!timerState.running; renderTimer(); }
     else if(e.key==="s" || e.key==="S"){ skipCurrentStep(); }
-    else if(e.key==="ArrowUp"){ e.preventDefault(); adjustRemaining(30); }
-    else if(e.key==="ArrowDown"){ e.preventDefault(); adjustRemaining(-30); }
+    else if(e.key==="ArrowUp"){ e.preventDefault(); adjustRemaining(60); }
+    else if(e.key==="ArrowDown"){ e.preventDefault(); adjustRemaining(-60); }
     else if(e.key==="Escape"){ stopTimer(); showIdle(); }
     return;
   }
