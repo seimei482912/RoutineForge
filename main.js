@@ -1,6 +1,15 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
 
+// 二重起動防止(複数ウインドウが並ぶとキー入力先が分からなくなるため)
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+}
+app.on("second-instance", () => {
+  const w = BrowserWindow.getAllWindows()[0];
+  if (w) { if (w.isMinimized()) w.restore(); w.focus(); }
+});
+
 function createWindow() {
   const win = new BrowserWindow({
     width: 1024,

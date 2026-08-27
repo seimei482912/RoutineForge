@@ -173,6 +173,15 @@ input{font-family:inherit; user-select:text; -webkit-user-select:text;}
 .spark{position:absolute; width:7px; height:7px; background:var(--ye); animation:sparkStep .9s steps(3) forwards;}
 @keyframes sparkStep{to{transform:translateY(-28px); opacity:0;}}
 
+/* --- アプリ内確認モーダル(alert/confirm代替。Electronのネイティブダイアログは
+   表示後にキーボード入力が死ぬ既知バグがあるため使用禁止) --- */
+.modal-backdrop{position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:70;
+  display:flex; align-items:center; justify-content:center;}
+.modal-box{background:var(--well); border:2px solid var(--line2); padding:22px 26px; min-width:340px;}
+.modal-msg{font-size:14px; margin-bottom:18px; text-align:center;}
+.modal-btns{display:flex; gap:10px; justify-content:center;}
+.form-err{color:var(--rd); font-size:12px; margin-bottom:10px; min-height:16px;}
+
 @media (prefers-reduced-motion: reduce){
   .ring-tick.over,.ring-inner .countdown.over,.celebrate.flash,.spark{animation:none;}
   .celebrate .txt{animation:none; width:100%;}
@@ -318,6 +327,25 @@ function fmtTotal(r){
   return `約${Math.round(sec/60)}分`;
 }
 
+/* alert/confirm は使用禁止(表示後にキーボード入力が死ぬElectronの既知バグ)。
+   代わりのアプリ内モーダル。 */
+function showConfirm(msg, onOk){
+  const bd = document.createElement("div");
+  bd.className = "modal-backdrop";
+  bd.innerHTML = `
+    <div class="modal-box">
+      <div class="modal-msg">${escapeHtml(msg)}</div>
+      <div class="modal-btns">
+        <button class="btn-wide" id="mcOk">はい</button>
+        <button class="btn-wide ghost" id="mcNo">いいえ</button>
+      </div>
+    </div>`;
+  document.body.appendChild(bd);
+  bd.querySelector("#mcOk").addEventListener("click", ()=>{ bd.remove(); onOk(); });
+  bd.querySelector("#mcNo").addEventListener("click", ()=> bd.remove());
+  bd.addEventListener("click", (e)=>{ if(e.target===bd) bd.remove(); });
+}
+
 /* ============ 左ペイン ============ */
 let SELECTED = null;
 
@@ -342,15 +370,14 @@ function renderSide(){
   }).join("");
   list.querySelectorAll(".rcard").forEach(el=>{
     el.addEventListener("click", ()=>{
-      if(timerState){
-        if(!confirm("実行中のルーティンを中断しますか？")) return;
-        stopTimer();
-      }
-      SELECTED = el.dataset.id; renderSide(); showIdle();
+      const go = ()=>{ stopTimer(); SELECTED = el.dataset.id; renderSide(); showIdle(); };
+      if(timerState){ showConfirm("実行中のルーティンを中断しますか？", go); return; }
+      go();
     });
     el.addEventListener("dblclick", ()=>{
       if(timerState && timerState.routine.id !== el.dataset.id){
-        if(!confirm("実行中のルーティンを中断しますか？")) return;
+        showConfirm("実行中のルーティンを中断しますか？", ()=> startRoutine(el.dataset.id));
+        return;
       }
       startRoutine(el.dataset.id);
     });
@@ -654,8 +681,8 @@ let editDraft = null;
 
 function showEdit(routineId){
   if(timerState){
-    if(!confirm("実行中のルーティンを中断しますか？")) return;
-    stopTimer();
+    showConfirm("実行中のルーティンを中断しますか？", ()=>{ stopTimer(); showEdit(routineId); });
+    return;
   }
   MODE = "edit";
   const existing = routineId ? DATA.routines.find(r=>r.id===routineId) : null;
@@ -689,6 +716,7 @@ function paintEdit(){
         <div id="stepsEdit">${stepsHtml}</div>
         <button class="add-step-btn" id="addStep">＋ ステップを追加</button>
       </div>
+      <div class="form-err" id="formErr"></div>
       <div class="edit-actions">
         <button class="btn-wide" id="saveRoutine">保存する</button>
         <button class="btn-wide ghost" id="cancelEdit">キャンセル (Esc)</button>
@@ -722,10 +750,11 @@ function paintEdit(){
     const inputs = mainPane.querySelectorAll('[data-field="name"]');
     if(inputs.length) inputs[inputs.length-1].focus();
   });
+  const setErr = (m)=>{ document.getElementById("formErr").textContent = m; };
   document.getElementById("saveRoutine").addEventListener("click", ()=>{
-    if(!d.name.trim()){ alert("ルーティン名を入力してください"); return; }
+    if(!d.name.trim()){ setErr("ルーティン名を入力してください"); return; }
     d.steps = d.steps.filter(s=>s.name.trim());
-    if(d.steps.length===0){ alert("ステップを1つ以上追加してください"); return; }
+    if(d.steps.length===0){ setErr("ステップを1つ以上追加してください"); paintEdit(); return; }
     const idx = DATA.routines.findIndex(r=>r.id===d.id);
     if(idx>=0) DATA.routines[idx] = d; else DATA.routines.push(d);
     saveData(DATA);
@@ -735,13 +764,14 @@ function paintEdit(){
   });
   const delBtn = document.getElementById("delRoutine");
   if(delBtn) delBtn.addEventListener("click", ()=>{
-    if(!confirm("このルーティンを削除しますか？")) return;
-    DATA.routines = DATA.routines.filter(r=>r.id!==d.id);
-    DATA.logs = DATA.logs.filter(l=>l.routineId!==d.id);
-    saveData(DATA);
-    if(SELECTED===d.id) SELECTED = null;
-    renderSide();
-    showIdle();
+    showConfirm("このルーティンを削除しますか？", ()=>{
+      DATA.routines = DATA.routines.filter(r=>r.id!==d.id);
+      DATA.logs = DATA.logs.filter(l=>l.routineId!==d.id);
+      saveData(DATA);
+      if(SELECTED===d.id) SELECTED = null;
+      renderSide();
+      showIdle();
+    });
   });
 }
 
